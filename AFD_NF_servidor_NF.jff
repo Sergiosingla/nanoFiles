@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?><!--Created with JFLAP 7.1.--><structure>
+	<type>fa</type>
+	<automaton>
+		<!--The list of states.-->
+		<state id="0" name="q0">
+			<x>58.0</x>
+			<y>323.0</y>
+			<initial/>
+			<final/>
+		</state>
+		<state id="1" name="q1">
+			<x>349.0</x>
+			<y>324.0</y>
+			<label>PROCESS_DOWNLOAD</label>
+		</state>
+		<state id="2" name="q2">
+			<x>707.0</x>
+			<y>321.0</y>
+			<final/>
+		</state>
+		<state id="3" name="q3">
+			<x>341.0</x>
+			<y>526.0</y>
+			<label>PROCCESS_UPLOAD</label>
+		</state>
+		<!--The list of transitions.-->
+		<transition>
+			<from>3</from>
+			<to>0</to>
+			<read>snd(uploadOk)</read>
+		</transition>
+		<transition>
+			<from>1</from>
+			<to>0</to>
+			<read>snd(AmbiguousName)</read>
+		</transition>
+		<transition>
+			<from>3</from>
+			<to>0</to>
+			<read>snd(uploadFail)</read>
+		</transition>
+		<transition>
+			<from>0</from>
+			<to>3</to>
+			<read>rcv(upload)</read>
+		</transition>
+		<transition>
+			<from>1</from>
+			<to>2</to>
+			<read>snd(downloadOk)</read>
+		</transition>
+		<transition>
+			<from>2</from>
+			<to>1</to>
+			<read>rcv(corruptDownload)</read>
+		</transition>
+		<transition>
+			<from>1</from>
+			<to>0</to>
+			<read>snd(FileNotFound)</read>
+		</transition>
+		<transition>
+			<from>0</from>
+			<to>1</to>
+			<read>rcv(DownloadFile)</read>
+		</transition>
+	</automaton>
+</structure>
