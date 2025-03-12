@@ -321,6 +321,8 @@ public class DirectoryConnector {
 
 		try {
 			responseMessage = DirMessage.fromString(new String(responseData,0,responseData.length));
+			//Testing commits
+
 		} catch (Exception e) {
 			System.err.println("[-] Error parsing message.");
 			System.exit(-1);
