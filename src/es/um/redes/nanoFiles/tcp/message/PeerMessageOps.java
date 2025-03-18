@@ -12,6 +12,15 @@ public class PeerMessageOps {
 	 * los diferentes tipos de mensajes del protocolo de comunicación con un par
 	 * servidor de ficheros (valores posibles del campo "operation").
 	 */
+	public static final byte OPCODE_NOT_FOUND = 1;
+	public static final byte OPCODE_AMBIGUOUS_NAME = 2;
+	public static final byte OPCODE_DOWNLOAD_FILE = 3;
+	public static final byte OPCODE_DOWNLOAD_APROVE = 4;
+	public static final byte OPCODE_GET_CHUNCK = 5;
+	public static final byte OPCODE_CORRUPT_DOWNLOAD = 6;
+	public static final byte OPCODE_UPLOAD = 10;
+	public static final byte OPCODE_UPLOAD_APROVE = 11;
+	public static final byte OPCODE_UPLOAD_DENY = 12;
 
 
 
@@ -22,14 +31,26 @@ public class PeerMessageOps {
 	 * su representación textual a "valid_operations_str" EN EL MISMO ORDEN.
 	 */
 	private static final Byte[] _valid_opcodes = { OPCODE_INVALID_CODE,
-
-
-
+			OPCODE_NOT_FOUND,
+			OPCODE_AMBIGUOUS_NAME,
+			OPCODE_DOWNLOAD_FILE,
+			OPCODE_DOWNLOAD_APROVE,
+			OPCODE_GET_CHUNCK,
+			OPCODE_CORRUPT_DOWNLOAD,
+			OPCODE_UPLOAD,
+			OPCODE_UPLOAD_APROVE,
+			OPCODE_UPLOAD_DENY,
 	};
 	private static final String[] _valid_operations_str = { "INVALID_OPCODE",
-
-
-
+			"NOT_FOUND",
+			"AMBIGUOUS_NAME",
+			"DOWNLOAD_FILE",
+			"DOWNLOAD_APROVE",
+			"GET_CHUNCK",
+			"CORRUPT_DOWNLOAD",
+			"UPLOAD",
+			"UPLOAD_APROVE",
+			"UPLOAD_DENY",
 	};
 
 	private static Map<String, Byte> _operation_to_opcode;

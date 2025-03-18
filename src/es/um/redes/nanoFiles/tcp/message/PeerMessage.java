@@ -24,6 +24,10 @@ public class PeerMessage {
 	 * específicos para crear mensajes con otros campos, según sea necesario
 	 * 
 	 */
+	private byte[] substringLength = new byte[4];
+	private byte[] substring;
+	private byte[] hashCode = new byte[40];
+	
 
 
 
@@ -36,6 +40,18 @@ public class PeerMessage {
 		opcode = op;
 	}
 
+	public PeerMessage PeerMessageDownload(byte[] substring) {
+		PeerMessage msg = new PeerMessage(PeerMessageOps.OPCODE_DOWNLOAD_FILE);
+		msg.setSubstring(substring);
+		return msg;
+	}
+
+	public PeerMessage PeerMessageDownloadAprove(byte[] hashCode) {
+		PeerMessage msg = new PeerMessage(PeerMessageOps.OPCODE_DOWNLOAD_APROVE);
+		msg.setHashCode(hashCode);
+		return msg;
+	}
+
 	/*
 	 * TODO: (Boletín MensajesBinarios) Crear métodos getter y setter para obtener
 	 * los valores de los atributos de un mensaje. Se aconseja incluir código que
@@ -44,6 +60,29 @@ public class PeerMessage {
 	 */
 	public byte getOpcode() {
 		return opcode;
+	}
+
+	public void setSubstring(byte[] substring) {
+		this.substring = substring;
+		ByteBuffer bb = ByteBuffer.allocate(4);
+		bb.putInt(substring.length);
+		this.substringLength = bb.array();
+	}
+
+	public byte[] getSubstring() {
+		return substring;
+	}
+
+	public byte[] getSubstringLength() {
+		return substringLength;
+	}
+
+	public void setHashCode(byte[] hashCode) {
+		this.hashCode = hashCode;
+	}
+
+	public byte[] getHashCode() {
+		return hashCode;
 	}
 
 
