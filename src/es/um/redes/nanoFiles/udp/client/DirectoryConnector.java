@@ -49,11 +49,6 @@ public class DirectoryConnector {
 	private String directoryHostname;
 
 
-	/**
-	 * Variable para controlar el login
-	 */
-	private boolean alreadyLogin = false;
-
 
 	public DirectoryConnector(String hostname) throws IOException {
 		// Guardamos el string con el nombre/IP del host
@@ -119,7 +114,7 @@ public class DirectoryConnector {
 				socket.send(packetToServer);
 			} catch (IOException e) {
 				System.err.println("IOException al enviar paquete.");
-				System.exit(-1);
+				return null;
 			}
 			
 			/*
@@ -145,12 +140,12 @@ public class DirectoryConnector {
 				attempts++;
 			} catch (IOException e) {
 				System.err.println("IOException al recibir paquete.");
-				System.exit(-1);
+				return null;
 			}
 		}
 		if(!successfulReceive) {
 			System.err.println("[*] Error: No se pudo recibir el PING. Abortando...");
-			System.exit(-1);
+			return null;
 		}
 		
 		
@@ -281,12 +276,6 @@ public class DirectoryConnector {
 
 			
 		}
-
-		// Momento en el que se establece ONLINE el NanoFiles
-		if (success) {
-			alreadyLogin = true;
-		}
-
 		return success;
 	}
 
@@ -301,10 +290,6 @@ public class DirectoryConnector {
 	 */
 	public boolean registerFileServer(int serverPort, FileInfo[] files) {
 
-		// Comprobacion de logeo
-		if (!alreadyLogin) {
-			throw new RuntimeException("Trying to getFileList before login in.");
-		}
 
 		boolean success = false;
 
@@ -314,18 +299,17 @@ public class DirectoryConnector {
 		// Enviar peticion
 		byte[] responseData = sendAndReceiveDatagrams(requestData);
 		if (responseData==null) {
-			throw new RuntimeException("[-] No data recived in registerFileServer");
+			System.err.println("[-] No data received in registerFileServer");
+			return success;
 		}
 
 		DirMessage responseMessage = null;
 
 		try {
 			responseMessage = DirMessage.fromString(new String(responseData,0,responseData.length));
-			//Testing commits
-
 		} catch (Exception e) {
 			System.err.println("[-] Error parsing message.");
-			System.exit(-1);
+			return success;
 		}
 
 		// Tratamiento de la respuesta
@@ -356,13 +340,7 @@ public class DirectoryConnector {
 	 */
 	public FileInfo[] getFileList() {
 
-		// Comprobacion de logeo
-		if (!alreadyLogin) {
-			throw new RuntimeException("Trying to getFileList before login in.");
-		}
-
-
-
+		
 		FileInfo[] filelist = new FileInfo[0];
 		// Ver TODOs en pingDirectory y seguir esquema similar
 		
@@ -372,17 +350,18 @@ public class DirectoryConnector {
 		// Enviar request_file_list
 		byte[] responseData = sendAndReceiveDatagrams(requestData);
 		if (responseData==null) {
-			throw new RuntimeException("[-] No data recived in getFileList");
+			System.err.println("[-] Error: No data received in registerFileServer");
+			return filelist;
 		}
 
-		System.out.println(new String(responseData,0,responseData.length));
+		//System.out.println(new String(responseData,0,responseData.length));
 
 		DirMessage responseMessage = null;
 		try {
 			responseMessage = DirMessage.fromString(new String(responseData,0,responseData.length));
 		} catch (Exception e) {
-			System.err.println("[-] Error parsing message.");
-			System.exit(-1);
+			System.err.println("[-] Error: Not posible parsing message.");
+			return filelist;
 		}
 
 		// Tratamiento de la respuesta
@@ -415,10 +394,6 @@ public class DirectoryConnector {
 	 */
 	public InetSocketAddress[] getServersSharingThisFile(String filenameSubstring) {
 
-		// Comprobacion de logeo
-		if (!alreadyLogin) {
-			throw new RuntimeException("Trying to getFileList before login in.");
-		}
 
 		//Ver TODOs en pingDirectory y seguir esquema similar
 		InetSocketAddress[] serversList = new InetSocketAddress[0];
@@ -429,15 +404,16 @@ public class DirectoryConnector {
 		// Enviar request_server_list
 		byte[] responseData = sendAndReceiveDatagrams(requestData);
 		if (responseData==null) {
-			throw new RuntimeException("[-] No data recived in getServersSharingThisFile");
+			System.err.println("[-] Error: No data recived in getServersSharingThisFile");
+			return serversList;
 		}
 
 		DirMessage responseMessage = null;
 		try {
 			responseMessage = DirMessage.fromString(new String(responseData,0,responseData.length));
 		} catch (Exception e) {
-			System.err.println("[-] Error parsing message.");
-			System.exit(-1);
+			System.err.println("[-] Error: Not posible parsing message.");
+			return serversList;
 		}
 
 		// Tratamiento de la respuesta

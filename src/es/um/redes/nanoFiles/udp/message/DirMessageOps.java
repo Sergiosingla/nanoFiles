@@ -12,6 +12,7 @@ public class DirMessageOps {
 	// Mensajes de petición y respuesta de ping
 	public static final String OPERATION_PING = "ping";
 	public static final String OPERATION_PINGOK = "ping_ok";
+	//TODO mensaje de ping_fail
 
 	// Mensajes de petición y respuesta de listado de ficheros
 	public static final String OPERATION_REQEST_FILELIST = "request_file_list";

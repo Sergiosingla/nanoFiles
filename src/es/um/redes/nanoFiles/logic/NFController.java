@@ -17,6 +17,14 @@ public class NFController {
 	 * del autómata del cliente de directorio.
 	 */
 
+	private static final byte RETRY_PING = 1;
+	private static final byte ONLINE = 2;
+	private static final byte RETRY_REQUEST_FILE_LIST = 3;
+	private static final byte RETRY_PUBLISH_FILES = 4;
+	private static final byte RETRY_REQUEST_SERVERS_LIST = 5;
+	private static final byte RETRY_QUIT = 6;
+	private static final byte END = 7;
+
 
 
 
@@ -211,10 +219,42 @@ public class NFController {
 			commandAllowed = true;
 			break;
 		}
-		default:
-			// System.err.println("ERROR: undefined behaviour for " + currentCommand + "
-			// command!");
+		case NFCommands.COM_DOWNLOAD: {
+			if (currentState!=ONLINE) {
+				System.err.println("[-] Error: You must ping before introduce any other command.");
+				commandAllowed=false;
+			}
+			break;
 		}
+		case NFCommands.COM_FILELIST: {
+			if (currentState!=ONLINE) {
+				System.err.println("[-] Error: You must ping before introduce any other command.");
+				commandAllowed=false;
+			}
+			break;
+		}
+		case NFCommands.COM_PING: {
+			commandAllowed = true;
+			break;
+		}
+		case NFCommands.COM_QUIT: {
+			if (currentState!=ONLINE || currentState!=OFFLINE) {
+				System.err.println("[-] Error: You must ping before introduce any other command.");
+				commandAllowed=false;
+			}
+			break;
+		}
+		case NFCommands.COM_SERVE: {
+			if (currentState!=ONLINE) {
+				System.err.println("[-] Error: You must ping before introduce any other command.");
+				commandAllowed=false;
+			}
+			break;
+		}
+		default:
+			 System.err.println("ERROR: undefined behaviour for " + currentCommand + " command!");
+		}
+		
 		return commandAllowed;
 	}
 
@@ -228,6 +268,34 @@ public class NFController {
 			return;
 		}
 		switch (currentCommand) {
+		case NFCommands.COM_DOWNLOAD: {
+			currentState = ONLINE;
+			break;
+		}
+		case NFCommands.COM_FILELIST: {
+			currentState = ONLINE;
+			break;
+		}
+		case NFCommands.COM_HELP: {
+			currentState = ONLINE;
+			break;
+		}
+		case NFCommands.COM_MYFILES: {
+			currentState = ONLINE;
+			break;
+		}
+		case NFCommands.COM_PING: {
+			currentState = ONLINE;
+			break;
+		}
+		case NFCommands.COM_QUIT: {
+			currentState = END;
+			break;
+		}
+		case NFCommands.COM_SERVE: {
+			currentState = ONLINE;
+			break;
+		}
 		default:
 		}
 
