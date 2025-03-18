@@ -36,31 +36,6 @@
 		</state>
 		<!--The list of transitions.-->
 		<transition>
-			<from>1</from>
-			<to>0</to>
-			<read>snd(invalid)</read>
-		</transition>
-		<transition>
-			<from>5</from>
-			<to>0</to>
-			<read>snd(quit_ok)</read>
-		</transition>
-		<transition>
-			<from>0</from>
-			<to>2</to>
-			<read>rcv(request_file_list)</read>
-		</transition>
-		<transition>
-			<from>0</from>
-			<to>1</to>
-			<read>rcv(ping)</read>
-		</transition>
-		<transition>
-			<from>2</from>
-			<to>0</to>
-			<read>snd(file_list_fail)</read>
-		</transition>
-		<transition>
 			<from>4</from>
 			<to>0</to>
 			<read>snd(servers_list_fail)</read>
@@ -71,9 +46,29 @@
 			<read>snd(pingok)</read>
 		</transition>
 		<transition>
+			<from>2</from>
+			<to>0</to>
+			<read>snd(file_list_fail)</read>
+		</transition>
+		<transition>
 			<from>0</from>
-			<to>4</to>
-			<read>rcv(request_servers_list)</read>
+			<to>5</to>
+			<read>rcv(quit)</read>
+		</transition>
+		<transition>
+			<from>0</from>
+			<to>2</to>
+			<read>rcv(request_file_list)</read>
+		</transition>
+		<transition>
+			<from>5</from>
+			<to>0</to>
+			<read>snd(quit_fail)</read>
+		</transition>
+		<transition>
+			<from>5</from>
+			<to>0</to>
+			<read>snd(quit_ok)</read>
 		</transition>
 		<transition>
 			<from>3</from>
@@ -81,9 +76,9 @@
 			<read>snd(publish_files_fail)</read>
 		</transition>
 		<transition>
-			<from>5</from>
+			<from>1</from>
 			<to>0</to>
-			<read>snd(quit_fail)</read>
+			<read>snd(invalid)</read>
 		</transition>
 		<transition>
 			<from>2</from>
@@ -96,19 +91,24 @@
 			<read>snd(servers_list)</read>
 		</transition>
 		<transition>
-			<from>0</from>
-			<to>3</to>
-			<read>rcv(publish_files)</read>
-		</transition>
-		<transition>
-			<from>0</from>
-			<to>5</to>
-			<read>rcv(quit)</read>
-		</transition>
-		<transition>
 			<from>3</from>
 			<to>0</to>
 			<read>snd(publish_files_ok)</read>
+		</transition>
+		<transition>
+			<from>0</from>
+			<to>4</to>
+			<read>rcv(request_servers_list)</read>
+		</transition>
+		<transition>
+			<from>0</from>
+			<to>1</to>
+			<read>rcv(ping)</read>
+		</transition>
+		<transition>
+			<from>0</from>
+			<to>3</to>
+			<read>rcv(publish_files)</read>
 		</transition>
 	</automaton>
 </structure>
