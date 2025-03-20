@@ -14,7 +14,8 @@ import es.um.redes.nanoFiles.util.FileInfo;
 
 public class PeerMessage {
 
-
+	// Tamaño default de un chunk: 4000 bytes
+	private static final int DEFAULT_CHUNK_SIZE = 4000;
 
 
 	private byte opcode;
@@ -24,10 +25,12 @@ public class PeerMessage {
 	 * específicos para crear mensajes con otros campos, según sea necesario
 	 * 
 	 */
-	private byte[] substringLength = new byte[4];
-	private byte[] substring;
-	private byte[] hashCode = new byte[40];
-	
+	private int substringLength;
+	private String substring;
+	private String hashCode;
+	private double fileOffset;
+	private int chunckSize;
+	private byte[] chunckData;
 
 
 
@@ -40,15 +43,34 @@ public class PeerMessage {
 		opcode = op;
 	}
 
-	public PeerMessage PeerMessageDownload(byte[] substring) {
+	public static PeerMessage PeerMessageDownloadFile(String substring) {
 		PeerMessage msg = new PeerMessage(PeerMessageOps.OPCODE_DOWNLOAD_FILE);
 		msg.setSubstring(substring);
 		return msg;
 	}
 
-	public PeerMessage PeerMessageDownloadAprove(byte[] hashCode) {
+	public static PeerMessage PeerMessageDownloadAprove(String hashCode) {
 		PeerMessage msg = new PeerMessage(PeerMessageOps.OPCODE_DOWNLOAD_APROVE);
+		//System.out.println("Creating download aprove message with hash: " + hashCode);
 		msg.setHashCode(hashCode);
+		return msg;
+	}
+
+	public static PeerMessage PeerMessageGetChunck(double _fileOffset, int _chunckSize) {
+		PeerMessage msg = new PeerMessage(PeerMessageOps.OPCODE_GET_CHUNCK);
+		msg.setFileOffset(_fileOffset);
+		msg.setChunckSize(_chunckSize);
+		return msg;
+	}
+
+	public static PeerMessage PeerMessageGetChunck(double _fileOffset) {
+		return PeerMessageGetChunck(_fileOffset,DEFAULT_CHUNK_SIZE);
+	}
+
+	public static PeerMessage PeerMessageSendChunk(int _chunkSize, byte[] _chunckData) {
+		PeerMessage msg = new PeerMessage(PeerMessageOps.OPCODE_SEND_CHUNK);
+		msg.setChunckSize(_chunkSize);
+		msg.setChunckData(_chunckData);
 		return msg;
 	}
 
@@ -62,27 +84,49 @@ public class PeerMessage {
 		return opcode;
 	}
 
-	public void setSubstring(byte[] substring) {
+	public void setSubstring(String substring) {
 		this.substring = substring;
-		ByteBuffer bb = ByteBuffer.allocate(4);
-		bb.putInt(substring.length);
-		this.substringLength = bb.array();
+		this.substringLength = substring.length();
 	}
 
-	public byte[] getSubstring() {
+	public String getSubstring() {
 		return substring;
 	}
 
-	public byte[] getSubstringLength() {
+	public int getSubstringLength() {
 		return substringLength;
 	}
 
-	public void setHashCode(byte[] hashCode) {
+	public void setHashCode(String hashCode) {
 		this.hashCode = hashCode;
 	}
 
-	public byte[] getHashCode() {
+	public String getHashCode() {
 		return hashCode;
+	}
+
+	public void setFileOffset(double fileOffset) {
+		this.fileOffset = fileOffset;
+	}
+
+	public double getFileOffset() {
+		return fileOffset;
+	}
+
+	public void setChunckSize(int chunckSize) {
+		this.chunckSize = chunckSize;
+	}
+
+	public int getChunckSize() {
+		return chunckSize;
+	}
+
+	public void setChunckData(byte[] chunckData) {
+		this.chunckData = chunckData;
+	}	
+
+	public byte[] getChunckData() {
+		return chunckData;
 	}
 
 
@@ -110,9 +154,47 @@ public class PeerMessage {
 		PeerMessage message = new PeerMessage();
 		byte opcode = dis.readByte();
 		switch (opcode) {
-
-
-
+		case PeerMessageOps.OPCODE_NOT_FOUND: {
+			message = new PeerMessage(PeerMessageOps.OPCODE_NOT_FOUND);
+			break;	
+		}
+		case PeerMessageOps.OPCODE_AMBIGUOUS_NAME: {
+			message = new PeerMessage(PeerMessageOps.OPCODE_AMBIGUOUS_NAME);
+			break;
+		}
+		case PeerMessageOps.OPCODE_DOWNLOAD_FILE: {
+			int length = dis.readInt();
+			String substringName = new String(dis.readNBytes(length));
+			message = PeerMessageDownloadFile(substringName);
+			break;
+		}
+		case PeerMessageOps.OPCODE_DOWNLOAD_APROVE: {
+			byte[] hashBytes = new byte[40];
+			dis.readFully(hashBytes);
+			String hash = new String(hashBytes);
+			message = PeerMessageDownloadAprove(hash);
+		}
+		case PeerMessageOps.OPCODE_CORRUPT_DOWNLOAD: {
+			message = new PeerMessage(PeerMessageOps.OPCODE_CORRUPT_DOWNLOAD);
+			break;
+		}
+		case PeerMessageOps.OPCODE_INVALID_CODE: {
+			message = new PeerMessage(PeerMessageOps.OPCODE_INVALID_CODE);
+			break;
+		}
+		case PeerMessageOps.OPCODE_GET_CHUNCK: {
+			double fileOffset = dis.readDouble();
+			int chunckSize = dis.readInt();
+			message = PeerMessageGetChunck(fileOffset,chunckSize);
+			break;
+		}
+		case PeerMessageOps.OPCODE_SEND_CHUNK: {
+			int chunckSize = dis.readInt();
+			byte[] chunckData = new byte[chunckSize];
+			dis.readFully(chunckData);
+			message = PeerMessageSendChunk(chunckSize,chunckData);
+			break;
+		}
 		default:
 			System.err.println("PeerMessage.readMessageFromInputStream doesn't know how to parse this message opcode: "
 					+ PeerMessageOps.opcodeToOperation(opcode));
@@ -129,12 +211,32 @@ public class PeerMessage {
 		 * dos.write para leer un array de bytes, dos.writeInt para escribir un entero,
 		 * etc.
 		 */
-
 		dos.writeByte(opcode);
 		switch (opcode) {
-
-
-
+		case PeerMessageOps.OPCODE_INVALID_CODE: 
+		case PeerMessageOps.OPCODE_NOT_FOUND:
+		case PeerMessageOps.OPCODE_AMBIGUOUS_NAME:
+		case PeerMessageOps.OPCODE_CORRUPT_DOWNLOAD:
+			break;
+		case PeerMessageOps.OPCODE_DOWNLOAD_FILE: {
+			dos.writeInt(substringLength);
+			dos.write(substring.getBytes());
+			break;
+		}
+		case PeerMessageOps.OPCODE_DOWNLOAD_APROVE: {
+			dos.write(hashCode.getBytes());
+			break;
+		}
+		case PeerMessageOps.OPCODE_GET_CHUNCK: {
+			dos.writeDouble(chunckSize);
+			dos.writeInt(chunckSize);
+			break;
+		}
+		case PeerMessageOps.OPCODE_SEND_CHUNK: {
+			dos.writeInt(chunckSize);
+			dos.write(chunckData);
+			break;
+		}
 
 		default:
 			System.err.println("PeerMessage.writeMessageToOutputStream found unexpected message opcode " + opcode + "("

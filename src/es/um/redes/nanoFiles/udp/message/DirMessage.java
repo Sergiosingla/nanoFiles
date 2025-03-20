@@ -24,7 +24,7 @@ public class DirMessage {
 	 */
 	private static final String FIELDNAME_OPERATION = "operation";
 	/*
-	 * TODO: (Boletín MensajesASCII) Definir de manera simbólica los nombres de
+	 * (Boletín MensajesASCII) Definir de manera simbólica los nombres de
 	 * todos los campos que pueden aparecer en los mensajes de este protocolo
 	 * (formato campo:valor)
 	 */
@@ -46,7 +46,7 @@ public class DirMessage {
 	 */
 	private String protocolId;
 	/*
-	 * TODO: (Boletín MensajesASCII) Crear un atributo correspondiente a cada uno de
+	 * (Boletín MensajesASCII) Crear un atributo correspondiente a cada uno de
 	 * los campos de los diferentes mensajes de este protocolo.
 	 */
 	private FileInfo[] files = new FileInfo[0];
@@ -61,7 +61,7 @@ public class DirMessage {
 	}
 
 	/*
-	 * TODO: (Boletín MensajesASCII) Crear diferentes constructores adecuados para
+	 * (Boletín MensajesASCII) Crear diferentes constructores adecuados para
 	 * construir mensajes de diferentes tipos con sus correspondientes argumentos
 	 * (campos del mensaje)
 	 */
@@ -134,7 +134,7 @@ public class DirMessage {
 	}
 
 	/*
-	 * TODO: (Boletín MensajesASCII) Crear métodos getter y setter para obtener los
+	 * (Boletín MensajesASCII) Crear métodos getter y setter para obtener los
 	 * valores de los atributos de un mensaje. Se aconseja incluir código que
 	 * compruebe que no se modifica/obtiene el valor de un campo (atributo) que no
 	 * esté definido para el tipo de mensaje dado por "operation".
@@ -221,7 +221,7 @@ public class DirMessage {
 	 */
 	public static DirMessage fromString(String message) {
 		/*
-		 * TODO: (Boletín MensajesASCII) Usar un bucle para parsear el mensaje línea a
+		 * (Boletín MensajesASCII) Usar un bucle para parsear el mensaje línea a
 		 * línea, extrayendo para cada línea el nombre del campo y el valor, usando el
 		 * delimitador DELIMITER, y guardarlo en variables locales.
 		 */
@@ -293,7 +293,7 @@ public class DirMessage {
 		StringBuffer sb = new StringBuffer();
 		sb.append(FIELDNAME_OPERATION + DELIMITER + operation + END_LINE); // Construimos el campo
 		/*
-		 * TODO: (Boletín MensajesASCII) En función de la operación del mensaje, crear
+		 * (Boletín MensajesASCII) En función de la operación del mensaje, crear
 		 * una cadena la operación y concatenar el resto de campos necesarios usando los
 		 * valores de los atributos del objeto.
 		 */

@@ -17,7 +17,8 @@ public class PeerMessageOps {
 	public static final byte OPCODE_DOWNLOAD_FILE = 3;
 	public static final byte OPCODE_DOWNLOAD_APROVE = 4;
 	public static final byte OPCODE_GET_CHUNCK = 5;
-	public static final byte OPCODE_CORRUPT_DOWNLOAD = 6;
+	public static final byte OPCODE_SEND_CHUNK = 6;
+	public static final byte OPCODE_CORRUPT_DOWNLOAD = 9;
 	public static final byte OPCODE_UPLOAD = 10;
 	public static final byte OPCODE_UPLOAD_APROVE = 11;
 	public static final byte OPCODE_UPLOAD_DENY = 12;
@@ -36,6 +37,7 @@ public class PeerMessageOps {
 			OPCODE_DOWNLOAD_FILE,
 			OPCODE_DOWNLOAD_APROVE,
 			OPCODE_GET_CHUNCK,
+			OPCODE_SEND_CHUNK,
 			OPCODE_CORRUPT_DOWNLOAD,
 			OPCODE_UPLOAD,
 			OPCODE_UPLOAD_APROVE,
@@ -47,6 +49,7 @@ public class PeerMessageOps {
 			"DOWNLOAD_FILE",
 			"DOWNLOAD_APROVE",
 			"GET_CHUNCK",
+			"SEND_CHUNK",
 			"CORRUPT_DOWNLOAD",
 			"UPLOAD",
 			"UPLOAD_APROVE",
