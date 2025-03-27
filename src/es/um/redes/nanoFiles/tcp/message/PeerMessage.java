@@ -67,7 +67,16 @@ public class PeerMessage {
 		return PeerMessageGetChunck(_fileOffset,DEFAULT_CHUNK_SIZE);
 	}
 
-	public static PeerMessage PeerMessageSendChunk(int _chunkSize, byte[] _chunckData) {
+	// Constructor donde solo se pasa la data, su longuitud se calcula
+	public static PeerMessage PeerMessageSendChunk(byte[] _chunckData) {
+		PeerMessage msg = new PeerMessage(PeerMessageOps.OPCODE_SEND_CHUNK);
+		msg.setChunckSize(_chunckData.length);
+		msg.setChunckData(_chunckData);
+		return msg;
+	}
+
+	// Constructor donde se pasa la longuitud de la data y la data
+	public static PeerMessage PeerMessageSendChunk(int _chunkSize,byte[] _chunckData) {
 		PeerMessage msg = new PeerMessage(PeerMessageOps.OPCODE_SEND_CHUNK);
 		msg.setChunckSize(_chunkSize);
 		msg.setChunckData(_chunckData);
@@ -171,8 +180,9 @@ public class PeerMessage {
 		case PeerMessageOps.OPCODE_DOWNLOAD_APROVE: {
 			byte[] hashBytes = new byte[40];
 			dis.readFully(hashBytes);
-			String hash = new String(hashBytes);
+			String hash = new String(hashBytes).trim();
 			message = PeerMessageDownloadAprove(hash);
+			break;
 		}
 		case PeerMessageOps.OPCODE_CORRUPT_DOWNLOAD: {
 			message = new PeerMessage(PeerMessageOps.OPCODE_CORRUPT_DOWNLOAD);
@@ -228,7 +238,7 @@ public class PeerMessage {
 			break;
 		}
 		case PeerMessageOps.OPCODE_GET_CHUNCK: {
-			dos.writeDouble(chunckSize);
+			dos.writeDouble(fileOffset);
 			dos.writeInt(chunckSize);
 			break;
 		}

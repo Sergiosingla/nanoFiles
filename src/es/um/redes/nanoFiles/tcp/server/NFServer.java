@@ -1,6 +1,10 @@
 package es.um.redes.nanoFiles.tcp.server;
 
+import java.io.DataInput;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 
@@ -17,16 +21,18 @@ public class NFServer implements Runnable {
 
 	public NFServer() throws IOException {
 		/*
-		 * TODO: (Boletín SocketsTCP) Crear una direción de socket a partir del puerto
+		 * (Boletín SocketsTCP) Crear una direción de socket a partir del puerto
 		 * especificado (PORT)
 		 */
+		InetSocketAddress socketAddress = new InetSocketAddress(PORT);
+
+
 		/*
-		 * TODO: (Boletín SocketsTCP) Crear un socket servidor y ligarlo a la dirección
+		 * (Boletín SocketsTCP) Crear un socket servidor y ligarlo a la dirección
 		 * de socket anterior
 		 */
-
-
-
+		serverSocket = new ServerSocket();
+		serverSocket.bind(socketAddress);
 	}
 
 	/**
@@ -47,20 +53,48 @@ public class NFServer implements Runnable {
 
 		while (true) {
 			/*
-			 * TODO: (Boletín SocketsTCP) Usar el socket servidor para esperar conexiones de
+			 * (Boletín SocketsTCP) Usar el socket servidor para esperar conexiones de
 			 * otros peers que soliciten descargar ficheros.
 			 */
+
+			boolean connection = false;
+			Socket socket = null;
+			try {
+				socket = serverSocket.accept();
+				connection = true;
+			} catch (IOException e) {
+				System.err.println("[-] Error accepting connection from client");
+			}
 			/*
-			 * TODO: (Boletín SocketsTCP) Tras aceptar la conexión con un peer cliente, la
+			 * (Boletín SocketsTCP) Tras aceptar la conexión con un peer cliente, la
 			 * comunicación con dicho cliente para servir los ficheros solicitados se debe
 			 * implementar en el método serveFilesToClient, al cual hay que pasarle el
 			 * socket devuelto por accept.
 			 */
-
-
-
+			try {
+				if (connection) {
+					DataInputStream dis = new DataInputStream(socket.getInputStream());
+					DataOutputStream dos = new DataOutputStream(socket.getOutputStream());
+	
+					int intRecived = dis.readInt();
+					System.out.println("Recived: " + intRecived);
+					intRecived++;
+					dos.writeInt(intRecived);
+					System.out.println("Sent: " + intRecived);
+	
+	
+					socket.close();
+				}
+				else {
+					System.err.println("[-] Error accepting connection from client");
+				}
+			} catch (IOException e) {
+				System.err.println("[-] Error during testTCPServer");
+			}
+			
 		}
 	}
+	
 
 	/**
 	 * Método que ejecuta el hilo principal del servidor en segundo plano, esperando

@@ -25,6 +25,16 @@
 		</state>
 		<!--The list of transitions.-->
 		<transition>
+			<from>3</from>
+			<to>0</to>
+			<read>rcv(uploadOk</read>
+		</transition>
+		<transition>
+			<from>1</from>
+			<to>2</to>
+			<read>rcv(download_aprove)</read>
+		</transition>
+		<transition>
 			<from>1</from>
 			<to>0</to>
 			<read>rcv(FileNotFound</read>
@@ -35,19 +45,9 @@
 			<read>rcv(uploadFail)</read>
 		</transition>
 		<transition>
-			<from>1</from>
-			<to>2</to>
-			<read>rcv(download_aprove)</read>
-		</transition>
-		<transition>
 			<from>2</from>
 			<to>1</to>
-			<read>snd(corruptDownload)</read>
-		</transition>
-		<transition>
-			<from>3</from>
-			<to>0</to>
-			<read>rcv(uploadOk</read>
+			<read>snd(corrupt_download)</read>
 		</transition>
 		<transition>
 			<from>1</from>
