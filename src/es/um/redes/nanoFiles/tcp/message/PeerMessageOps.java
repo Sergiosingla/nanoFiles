@@ -8,7 +8,7 @@ public class PeerMessageOps {
 	public static final byte OPCODE_INVALID_CODE = 0;
 
 	/*
-	 * TODO: (Boletín MensajesBinarios) Añadir aquí todas las constantes que definen
+	 * (Boletín MensajesBinarios) Añadir aquí todas las constantes que definen
 	 * los diferentes tipos de mensajes del protocolo de comunicación con un par
 	 * servidor de ficheros (valores posibles del campo "operation").
 	 */
@@ -27,7 +27,7 @@ public class PeerMessageOps {
 
 
 	/*
-	 * TODO: (Boletín MensajesBinarios) Definir constantes con nuevos opcodes de
+	 * (Boletín MensajesBinarios) Definir constantes con nuevos opcodes de
 	 * mensajes definidos anteriormente, añadirlos al array "valid_opcodes" y añadir
 	 * su representación textual a "valid_operations_str" EN EL MISMO ORDEN.
 	 */

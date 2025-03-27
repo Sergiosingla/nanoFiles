@@ -21,7 +21,7 @@ public class PeerMessage {
 	private byte opcode;
 
 	/*
-	 * TODO: (Boletín MensajesBinarios) Añadir atributos u otros constructores
+	 * (Boletín MensajesBinarios) Añadir atributos u otros constructores
 	 * específicos para crear mensajes con otros campos, según sea necesario
 	 * 
 	 */
@@ -84,7 +84,7 @@ public class PeerMessage {
 	}
 
 	/*
-	 * TODO: (Boletín MensajesBinarios) Crear métodos getter y setter para obtener
+	 * (Boletín MensajesBinarios) Crear métodos getter y setter para obtener
 	 * los valores de los atributos de un mensaje. Se aconseja incluir código que
 	 * compruebe que no se modifica/obtiene el valor de un campo (atributo) que no
 	 * esté definido para el tipo de mensaje dado por "operation".
@@ -153,7 +153,7 @@ public class PeerMessage {
 	 */
 	public static PeerMessage readMessageFromInputStream(DataInputStream dis) throws IOException {
 		/*
-		 * TODO: (Boletín MensajesBinarios) En función del tipo de mensaje, leer del
+		 * (Boletín MensajesBinarios) En función del tipo de mensaje, leer del
 		 * socket a través del "dis" el resto de campos para ir extrayendo con los
 		 * valores y establecer los atributos del un objeto DirMessage que contendrá
 		 * toda la información del mensaje, y que será devuelto como resultado. NOTA:
@@ -215,7 +215,7 @@ public class PeerMessage {
 
 	public void writeMessageToOutputStream(DataOutputStream dos) throws IOException {
 		/*
-		 * TODO (Boletín MensajesBinarios): Escribir los bytes en los que se codifica el
+		 * (Boletín MensajesBinarios): Escribir los bytes en los que se codifica el
 		 * mensaje en el socket a través del "dos", teniendo en cuenta opcode del
 		 * mensaje del que se trata y los campos relevantes en cada caso. NOTA: Usar
 		 * dos.write para leer un array de bytes, dos.writeInt para escribir un entero,

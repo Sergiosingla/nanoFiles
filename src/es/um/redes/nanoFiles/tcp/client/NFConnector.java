@@ -47,7 +47,7 @@ public class NFConnector {
 
 	public void test() {
 		/*
-		 * TODO: (Boletín SocketsTCP) Enviar entero cualquiera a través del socket y
+		 * (Boletín SocketsTCP) Enviar entero cualquiera a través del socket y
 		 * después recibir otro entero, comprobando que se trata del mismo valor.
 		 */
 

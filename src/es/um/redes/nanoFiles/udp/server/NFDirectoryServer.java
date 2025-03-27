@@ -220,7 +220,7 @@ public class NFDirectoryServer {
 
 	private void sendResponse(DatagramPacket pkt) throws IOException {
 		/*
-		 * TODO: (Boletín MensajesASCII) Construir String partir de los datos recibidos
+		 * (Boletín MensajesASCII) Construir String partir de los datos recibidos
 		 * en el datagrama pkt. A continuación, imprimir por pantalla dicha cadena a
 		 * modo de depuración. Después, usar la cadena para construir un objeto
 		 * DirMessage que contenga en sus atributos los valores del mensaje. A partir de
@@ -234,14 +234,14 @@ public class NFDirectoryServer {
 
 
 		/*
-		 * TODO: Una vez construido un objeto DirMessage con el contenido del datagrama
+		 * Una vez construido un objeto DirMessage con el contenido del datagrama
 		 * recibido, obtener el tipo de operación solicitada por el mensaje y actuar en
 		 * consecuencia, enviando uno u otro tipo de mensaje en respuesta.
 		 */
 		String operation = recivedMessage.getOperation();
 
 		/*
-		 * TODO: (Boletín MensajesASCII) Construir un objeto DirMessage (msgToSend) con
+		 * (Boletín MensajesASCII) Construir un objeto DirMessage (msgToSend) con
 		 * la respuesta a enviar al cliente, en función del tipo de mensaje recibido,
 		 * leyendo/modificando según sea necesario el "estado" guardado en el servidor
 		 * de directorio (atributos files, etc.). Los atributos del objeto DirMessage

@@ -12,7 +12,7 @@ import es.um.redes.nanoFiles.util.FileInfo;
 
 public class NFControllerLogicP2P {
 	/*
-	 * TODO: Se necesita un atributo NFServer que actuará como servidor de ficheros
+	 * Se necesita un atributo NFServer que actuará como servidor de ficheros
 	 * de este peer
 	 */
 	private NFServer fileServer = null;
@@ -102,7 +102,6 @@ public class NFControllerLogicP2P {
 			NFConnector nfConnector = new NFConnector(new InetSocketAddress(NFServer.PORT));
 			nfConnector.test();
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
