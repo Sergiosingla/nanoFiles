@@ -16,7 +16,7 @@ import es.um.redes.nanoFiles.util.FileInfo;
 public class DirMessage {
 	public static final int PACKET_MAX_SIZE = 65507; // 65535 - 8 (UDP header) - 20 (IP header)
 
-	private static final char DELIMITER = ':'; // Define el delimitador
+	private static final char DELIMITER = '·'; // Define el delimitador
 	private static final char END_LINE = '\n'; // Define el carácter de fin de línea
 
 	/**
@@ -30,8 +30,8 @@ public class DirMessage {
 	 */
 	private static final String FIELDNAME_PROTOCOL = "protocol";
 	private static final String FIELDNAME_FILES = "files";
-	private static final String FIELDNAME_FILENAMESUBSTRING = "filenameSubstring";
-	private static final String FIELDNAME_SERVERS_LIST = "serversList";
+	private static final String FIELDNAME_FILENAMESUBSTRING = "filenamesubstring";
+	private static final String FIELDNAME_SERVERS_LIST = "serverslist";
 
 
 
@@ -156,7 +156,7 @@ public class DirMessage {
 	}
 
 	public void setFilesInfo(FileInfo[] _files) {
-		if (!operation.equals(DirMessageOps.OPERATION_REQEST_FILELIST_OK)) {
+		if (!operation.equals(DirMessageOps.OPERATION_REQEST_FILELIST_OK)&&!operation.equals(DirMessageOps.OPERATION_PUBLISH_FILES)) {
 			throw new RuntimeException(
 					"DirMessage: setFilesInfor called for message of unexpected type (" + operation + ")");
 		}
@@ -184,7 +184,7 @@ public class DirMessage {
 	}
 
 	public FileInfo[] getFilesInfo() {
-		if ((!operation.equals(DirMessageOps.OPERATION_REQEST_FILELIST_OK))||(!operation.equals(DirMessageOps.OPERATION_PUBLISH_FILES))) {
+		if ((!operation.equals(DirMessageOps.OPERATION_REQEST_FILELIST_OK))&&(!operation.equals(DirMessageOps.OPERATION_PUBLISH_FILES))) {
 			throw new RuntimeException(
 					"DirMessage: getFIlesInfo called for message of unexpected type (" + operation + ")");
 		}
@@ -246,25 +246,26 @@ public class DirMessage {
 					break;
 				}
 				case FIELDNAME_PROTOCOL: {
-					assert (m == null);
+					assert (m != null);
 					m.setProtocolID(value);
 					break;
 				}
 				case FIELDNAME_FILES : {
-					assert (m == null);
+					assert (m != null);
 					m.setFilesInfo(FileInfo.fromString(value));
 					break;
 				}
 				case FIELDNAME_FILENAMESUBSTRING: {
-					assert (m == null);
+					assert (m != null);
 					m.setFileNameSubstring(value);
 					break;
 				}
 				case FIELDNAME_SERVERS_LIST: {
-					assert (m == null);
-					//m.setServersList(InetSocketAddress.fromString(value));
+					assert (m != null);
+					m.setServersList(strToInetSocketAddress(value));
 					break;
 				}	
+				
 
 
 
@@ -280,6 +281,17 @@ public class DirMessage {
 
 		return m;
 	}
+
+	private static InetSocketAddress[] strToInetSocketAddress(String str) {
+		String[] servers = str.split(",");
+		InetSocketAddress[] result = new InetSocketAddress[servers.length];
+		for (int i = 0; i < servers.length; i++) {
+			String[] server = servers[i].split(":");
+			result[i] = new InetSocketAddress(server[0], Integer.parseInt(server[1]));
+		}
+		return result;
+	}
+
 
 	/**
 	 * Método que devuelve una cadena de caracteres con la codificación del mensaje
@@ -303,8 +315,35 @@ public class DirMessage {
 				break;
 			}
 			case DirMessageOps.OPERATION_REQEST_FILELIST_OK: {
-				sb.append(FIELDNAME_FILES + END_LINE);
-				sb.append(files.toString() + END_LINE);		// TODO chequear que este ultimo END_LINE es necesario o no
+				sb.append(FIELDNAME_FILES + DELIMITER);
+				for (int i = 0; i < files.length; i++) {
+					sb.append(files[i].toString());
+				}
+				sb.append(END_LINE);
+				break;
+			}
+			case DirMessageOps.OPERATION_PUBLISH_FILES: {
+				sb.append(FIELDNAME_FILES + DELIMITER);
+				for (int i = 0; i < files.length; i++) {
+					sb.append(files[i].toString());
+				}
+				sb.append(END_LINE);
+				break;
+			}
+			case DirMessageOps.OPERATION_REQUEST_SERVERS_LIST: {
+				sb.append(FIELDNAME_FILENAMESUBSTRING + DELIMITER + filenameSubstring + END_LINE);
+				break;
+			}
+			case DirMessageOps.OPERATION_REQUEST_SERVERS_LIST_OK: {
+				sb.append(FIELDNAME_SERVERS_LIST + DELIMITER);
+				for (int i = 0; i < serversList.length; i++) {
+					sb.append(serversList[i].toString());
+					if(i < serversList.length - 1) {
+						sb.append(",");
+					}
+				}
+				sb.append(END_LINE);
+				break;
 			}
 			default:
 				break;

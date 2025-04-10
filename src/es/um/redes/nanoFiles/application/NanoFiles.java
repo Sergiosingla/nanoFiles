@@ -23,9 +23,10 @@ public class NanoFiles {
 	 * Flag para pruebas iniciales con TCP, desactivado una vez que la comunicación
 	 * cliente-servidor de ficheros está implementada y probada.
 	 */
-	public static boolean testModeTCP = true;
+	public static boolean testModeTCP = false;
 
 	public static void main(String[] args) {
+		System.setProperty("java.net.useSystemProxies", "false");
 		// Comprobamos los argumentos
 		if (args.length > 1) {
 			System.out.println("Usage: java -jar NanoFiles.jar [<local_shared_directory>]");

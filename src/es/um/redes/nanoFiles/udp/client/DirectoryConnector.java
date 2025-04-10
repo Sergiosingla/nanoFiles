@@ -294,6 +294,12 @@ public class DirectoryConnector {
 		boolean success = false;
 
 		DirMessage registerFileServerMessage = DirMessage.DirMessagePublishFiles(DirMessageOps.OPERATION_PUBLISH_FILES,files);
+		
+		//TODO - depurado para ver ficheros que se envianç
+		System.out.println("\t[*] Registering file server...");
+		for(FileInfo file : files) {
+			System.out.println("\t[*] File to publish: "+file.toString());
+		}
 		byte[] requestData = registerFileServerMessage.toString().getBytes();
 
 		// Enviar peticion
@@ -302,7 +308,6 @@ public class DirectoryConnector {
 			System.err.println("[-] No data received in registerFileServer");
 			return success;
 		}
-
 		DirMessage responseMessage = null;
 
 		try {

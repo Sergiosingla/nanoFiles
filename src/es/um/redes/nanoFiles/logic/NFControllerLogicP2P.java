@@ -1,6 +1,7 @@
 package es.um.redes.nanoFiles.logic;
 
 import java.net.InetSocketAddress;
+import java.io.File;
 import java.io.IOException;
 import es.um.redes.nanoFiles.tcp.client.NFConnector;
 import es.um.redes.nanoFiles.application.NanoFiles;
@@ -8,6 +9,7 @@ import es.um.redes.nanoFiles.application.NanoFiles;
 
 
 import es.um.redes.nanoFiles.tcp.server.NFServer;
+import es.um.redes.nanoFiles.tcp.server.NFServerThread;
 import es.um.redes.nanoFiles.util.FileInfo;
 
 public class NFControllerLogicP2P {
@@ -42,7 +44,7 @@ public class NFControllerLogicP2P {
 		} else {
 
 			/*
-			 * TODO: (Boletín Servidor TCP concurrente) Arrancar servidor en segundo plano
+			 * (Boletín Servidor TCP concurrente) Arrancar servidor en segundo plano
 			 * creando un nuevo hilo, comprobar que el servidor está escuchando en un puerto
 			 * válido (>0), imprimir mensaje informando sobre el puerto de escucha, y
 			 * devolver verdadero. Las excepciones que puedan lanzarse deben ser capturadas
@@ -51,9 +53,28 @@ public class NFControllerLogicP2P {
 			 * programa
 			 * 
 			 */
+			try {
+				fileServer = new NFServer();
+				
+				Thread serverThread = new Thread(() -> {
+					fileServer.run(); // Ejecutar el método run del servidor
+				});
+				serverThread.start();
+				int port = this.getServerPort();
+				if (port > 0) {
+					System.out.println("[+] NFServer running on " + this.getServerPort() + ".");
+					serverRunning = true;
+				} else {
+					System.err.println("[-] Error: Failed to run file server, server socket is null or not bound to any port");
+				}
 
-
-
+			}
+			catch (IOException e) {
+				e.printStackTrace();
+				System.err.println("[-] Error: Cannot start the file server");
+				fileServer = null;;
+			}
+			
 		}
 		return serverRunning;
 
@@ -138,7 +159,25 @@ public class NFControllerLogicP2P {
 		 * método. Si se produce una excepción de entrada/salida (error del que no es
 		 * posible recuperarse), se debe informar sin abortar el programa
 		 */
+		NFConnector[] nfConnectors = new NFConnector[serverAddressList.length];
+		for (int i = 0; i < serverAddressList.length; i++) {
+			try {
+				System.out.println("[+] Connecting to server " + serverAddressList[i].getHostString() + ":" + serverAddressList[i].getPort());
+				nfConnectors[i] = new NFConnector(new InetSocketAddress(serverAddressList[i].getAddress(), serverAddressList[i].getPort()));
+			} catch (IOException e) {
+				e.printStackTrace();
+				System.err.println("[-] Error: Cannot connect to server " + serverAddressList[i].getHostString()+ ":" + serverAddressList[i].getPort());
+				return downloaded;
+			}
+		}
+		File localFile = new File(localFileName);
+		if (localFile.exists()) {
+			System.err.println("[-] Error: File " + localFileName + " already exists");
+			return downloaded;
+		}
 
+
+		
 
 
 
@@ -153,11 +192,9 @@ public class NFControllerLogicP2P {
 	protected int getServerPort() {
 		int port = 0;
 		/*
-		 * TODO: Devolver el puerto de escucha de nuestro servidor de ficheros
+		 * Devolver el puerto de escucha de nuestro servidor de ficheros
 		 */
-
-
-
+		port = fileServer.getPort();
 		return port;
 	}
 
@@ -167,8 +204,14 @@ public class NFControllerLogicP2P {
 	 */
 	protected void stopFileServer() {
 		/*
-		 * TODO: Enviar señal para detener nuestro servidor de ficheros en segundo plano
+		 * Enviar señal para detener nuestro servidor de ficheros en segundo plano
 		 */
+		if (fileServer != null) {
+			fileServer.stopServer();
+			fileServer = null;
+		} else {
+			System.err.println("File server is not running");
+		}
 
 
 

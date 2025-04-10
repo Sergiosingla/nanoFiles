@@ -8,6 +8,8 @@ import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 
+import es.um.redes.nanoFiles.tcp.message.PeerMessage;
+
 
 
 
@@ -104,17 +106,36 @@ public class NFServer implements Runnable {
 	 */
 	public void run() {
 		/*
-		 * TODO: (Boletín SocketsTCP) Usar el socket servidor para esperar conexiones de
+		 * (Boletín SocketsTCP) Usar el socket servidor para esperar conexiones de
 		 * otros peers que soliciten descargar ficheros
 		 */
+		
+		while(true) {
+			try {
+				// Aceptar conexion de un cliente
+				Socket socket = serverSocket.accept();
+
+				// Iniciar hilo para atender al cliente
+				NFServerThread serverThread = new NFServerThread(socket);
+				serverThread.start();
+				
+
+			} catch (IOException e) {
+				System.err.println("[-] Error accepting connection from client");
+			}
+
+		}
+		
 		/*
-		 * TODO: (Boletín SocketsTCP) Al establecerse la conexión con un peer, la
+		 * (Boletín SocketsTCP) Al establecerse la conexión con un peer, la
 		 * comunicación con dicho cliente se hace en el método
 		 * serveFilesToClient(socket), al cual hay que pasarle el socket devuelto por
 		 * accept
 		 */
+		
+		
 		/*
-		 * TODO: (Boletín TCPConcurrente) Crear un hilo nuevo de la clase
+		 * (Boletín TCPConcurrente) Crear un hilo nuevo de la clase
 		 * NFServerThread, que llevará a cabo la comunicación con el cliente que se
 		 * acaba de conectar, mientras este hilo vuelve a quedar a la escucha de
 		 * conexiones de nuevos clientes (para soportar múltiples clientes). Si este
@@ -122,6 +143,7 @@ public class NFServer implements Runnable {
 		 * más de un cliente conectado a este servidor.
 		 */
 
+		
 
 
 
@@ -132,6 +154,31 @@ public class NFServer implements Runnable {
 	 * servidor (stopserver) 3) Obtener el puerto de escucha del servidor etc.
 	 */
 
+	public void startServer() {
+		if (serverSocket == null || !serverSocket.isBound()) {
+			System.err.println(
+					"[fileServerTestMode] Failed to run file server, server socket is null or not bound to any port");
+			return;
+		} else {
+			System.out
+					.println("[fileServerTestMode] NFServer running on " + serverSocket.getLocalSocketAddress() + ".");
+		}
+		//NFServerThread serverThread = new NFServerThread(serverSocket);
+		//serverThread.start();
+	}
+
+
+	public int getPort() {
+		return serverSocket.getLocalPort();
+	}
+
+	public void stopServer() {
+		try {
+			serverSocket.close();
+		} catch (IOException e) {
+			System.err.println("[-] Error closing server socket");
+		}
+	}
 
 
 
@@ -144,14 +191,28 @@ public class NFServer implements Runnable {
 	 */
 	public static void serveFilesToClient(Socket socket) {
 		/*
-		 * TODO: (Boletín SocketsTCP) Crear dis/dos a partir del socket
+		 *(Boletín SocketsTCP) Crear dis/dos a partir del socket
 		 */
+		DataInputStream dis = null;
+		DataOutputStream dos = null;
+		try {
+			dis = new DataInputStream(socket.getInputStream());
+			dos = new DataOutputStream(socket.getOutputStream());
+		}
+		catch (IOException e) {
+			System.err.println("[-] Error creating DataInputStream/DataOutputStream");
+			return;
+		}
+		
 		/*
 		 * TODO: (Boletín SocketsTCP) Mientras el cliente esté conectado, leer mensajes
 		 * de socket, convertirlo a un objeto PeerMessage y luego actuar en función del
 		 * tipo de mensaje recibido, enviando los correspondientes mensajes de
 		 * respuesta.
 		 */
+		PeerMessage peerMessage = null;
+
+		
 		/*
 		 * TODO: (Boletín SocketsTCP) Para servir un fichero, hay que localizarlo a
 		 * partir de su hash (o subcadena) en nuestra base de datos de ficheros

@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.Set;
 
 import es.um.redes.nanoFiles.application.NanoFiles;
+import es.um.redes.nanoFiles.tcp.server.NFServer;
 import es.um.redes.nanoFiles.udp.message.DirMessage;
 import es.um.redes.nanoFiles.udp.message.DirMessageOps;
 import es.um.redes.nanoFiles.util.FileInfo;
@@ -324,22 +325,27 @@ public class NFDirectoryServer {
 		// Proccess publish_files
 		case DirMessageOps.OPERATION_PUBLISH_FILES: {
 			try {
-
+				
 				FileInfo[] newFiles = recivedMessage.getFilesInfo();
 				List<FileInfo> fileList = new ArrayList<>(Arrays.asList(filesDirectory));
 
+				
 				// Añadir los nuevos archivos a la lista existente
 				fileList.addAll(Arrays.asList(newFiles));
-
+				
+				
 				// Actualizar filesDirectory
 				filesDirectory = fileList.toArray(new FileInfo[0]);
+				
 
 				// Actualizar el map de servidores por fichero
-				addServersFile((InetSocketAddress)pkt.getSocketAddress(), newFiles);
+				addServersFile(new InetSocketAddress(pkt.getAddress(), NFServer.PORT), newFiles);
 
 				msgToSend = new DirMessage(DirMessageOps.OPERATION_PUBLISH_FILES_OK);
-				System.err.println("[+] SUCCESS on "+DirMessageOps.OPERATION_PUBLISH_FILES);
-				System.err.println("[+] Posting files into the server...");
+				System.out.println("[+] SUCCESS on "+DirMessageOps.OPERATION_PUBLISH_FILES);
+				System.out.println("[+] Posting files into the server...");
+				System.out.println("[+] Files posted: ");
+				FileInfo.printToSysout(newFiles);
 			} catch (Exception e) {
 				msgToSend = new DirMessage(DirMessageOps.OPERATION_PUBLISH_FILES_FAIL);
 				System.err.println("[-] Error by "+DirMessageOps.OPERATION_PUBLISH_FILES);
@@ -361,7 +367,6 @@ public class NFDirectoryServer {
 					break;
 				}
 			}
-
 			// No se encuenta el fichero
 			if (hashTarget == null) {
 				msgToSend = new DirMessage(DirMessageOps.OPERATION_REQUEST_SERVERS_LIST_FAIL);
@@ -381,6 +386,8 @@ public class NFDirectoryServer {
 					System.err.println("[-] Sending response... "+DirMessageOps.OPERATION_REQUEST_SERVERS_LIST_FAIL);				
 				}
 			}
+
+			break;
 
 		}
 

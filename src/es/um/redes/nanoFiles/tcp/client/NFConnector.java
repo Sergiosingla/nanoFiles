@@ -26,12 +26,20 @@ public class NFConnector {
 
 	public NFConnector(InetSocketAddress fserverAddr) throws UnknownHostException, IOException {
 		serverAddr = fserverAddr;
+
+		// Validar el host y el puerto
+		if (serverAddr.getHostString() == null || serverAddr.getHostString().isEmpty()) {
+			throw new IllegalArgumentException("Invalid host: " + serverAddr);
+		}
+		if (serverAddr.getPort() <= 0) {
+			throw new IllegalArgumentException("Invalid port: " + serverAddr.getPort());
+		}
 		/*
 		 * (Boletín SocketsTCP) Se crea el socket a partir de la dirección del
 		 * servidor (IP, puerto). La creación exitosa del socket significa que la
 		 * conexión TCP ha sido establecida.
 		 */
-		socket = new Socket(serverAddr.getAddress(), serverAddr.getPort());
+		socket = new Socket(serverAddr.getHostString(), serverAddr.getPort());
 
 
 		/*

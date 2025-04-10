@@ -13,7 +13,7 @@ public class NFController {
 	 */
 	private static final byte OFFLINE = 0;
 	/*
-	 * (Boletín Autómatas) Añadir más constantes que representen los estados
+	 * TODO: (Boletín Autómatas) Añadir más constantes que representen los estados
 	 * del autómata del cliente de directorio.
 	 */
 
@@ -207,7 +207,7 @@ public class NFController {
 	 */
 	private boolean canProcessCommandInCurrentState() {
 		/*
-		 * (Boletín Autómatas) Para cada comando tecleado en el shell
+		 * TODO: (Boletín Autómatas) Para cada comando tecleado en el shell
 		 * (currentCommand), comprobar "currentState" para ver si dicho comando es
 		 * válido según el estado actual del autómata, ya que no todos los comandos
 		 * serán válidos en cualquier estado. Este método NO debe modificar
@@ -260,7 +260,7 @@ public class NFController {
 
 	private void updateCurrentState(boolean success) {
 		/*
-		 * (Boletín Autómatas) Si el comando ha sido procesado con éxito, debemos
+		 * TODO: (Boletín Autómatas) Si el comando ha sido procesado con éxito, debemos
 		 * actualizar currentState de acuerdo con el autómata diseñado para pasar al
 		 * siguiente estado y así permitir unos u otros comandos en cada caso.
 		 */
