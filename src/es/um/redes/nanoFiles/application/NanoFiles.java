@@ -6,6 +6,7 @@ import es.um.redes.nanoFiles.util.FileDatabase;
 public class NanoFiles {
 
 	public static final String DEFAULT_SHARED_DIRNAME = "nf-shared";
+	public static final String DEFAULT_DOWNLOADS_DIRNAME = "downloads";
 	/**
 	 * Identificador único para cada grupo de prácticas.  Establecer a un valor
 	 * que combine los DNIs de ambos miembros del grupo de prácticas.

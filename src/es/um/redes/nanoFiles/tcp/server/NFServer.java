@@ -3,12 +3,19 @@ package es.um.redes.nanoFiles.tcp.server;
 import java.io.DataInput;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.RandomAccessFile;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 
+import es.um.redes.nanoFiles.application.NanoFiles;
 import es.um.redes.nanoFiles.tcp.message.PeerMessage;
+import es.um.redes.nanoFiles.tcp.message.PeerMessageOps;
+import es.um.redes.nanoFiles.util.FileDatabase;
+import es.um.redes.nanoFiles.util.FileDigest;
+import es.um.redes.nanoFiles.util.FileInfo;
 
 
 
@@ -17,7 +24,7 @@ public class NFServer implements Runnable {
 
 	public static final int PORT = 10000;
 
-
+	private boolean stopServer = false;
 
 	private ServerSocket serverSocket = null;
 
@@ -109,8 +116,16 @@ public class NFServer implements Runnable {
 		 * (Boletín SocketsTCP) Usar el socket servidor para esperar conexiones de
 		 * otros peers que soliciten descargar ficheros
 		 */
+		if (serverSocket == null || !serverSocket.isBound()) {
+			System.err.println(
+					"[-] Failed to run file server, server socket is null or not bound to any port");
+			return;
+		} else {
+			System.out
+					.println("[fileServerTestMode] NFServer running on " + serverSocket.getLocalSocketAddress() + ".");
+		}
 		
-		while(true) {
+		while(!stopServer) {
 			try {
 				// Aceptar conexion de un cliente
 				Socket socket = serverSocket.accept();
@@ -155,16 +170,10 @@ public class NFServer implements Runnable {
 	 */
 
 	public void startServer() {
-		if (serverSocket == null || !serverSocket.isBound()) {
-			System.err.println(
-					"[fileServerTestMode] Failed to run file server, server socket is null or not bound to any port");
-			return;
-		} else {
-			System.out
-					.println("[fileServerTestMode] NFServer running on " + serverSocket.getLocalSocketAddress() + ".");
-		}
-		//NFServerThread serverThread = new NFServerThread(serverSocket);
-		//serverThread.start();
+		Thread serverThread = new Thread(() -> {
+			this.run();
+		});
+		serverThread.start();
 	}
 
 
@@ -173,11 +182,7 @@ public class NFServer implements Runnable {
 	}
 
 	public void stopServer() {
-		try {
-			serverSocket.close();
-		} catch (IOException e) {
-			System.err.println("[-] Error closing server socket");
-		}
+		stopServer = true;
 	}
 
 
@@ -205,27 +210,126 @@ public class NFServer implements Runnable {
 		}
 		
 		/*
-		 * TODO: (Boletín SocketsTCP) Mientras el cliente esté conectado, leer mensajes
+		 * (Boletín SocketsTCP) Mientras el cliente esté conectado, leer mensajes
 		 * de socket, convertirlo a un objeto PeerMessage y luego actuar en función del
 		 * tipo de mensaje recibido, enviando los correspondientes mensajes de
 		 * respuesta.
 		 */
-		PeerMessage peerMessage = null;
+		PeerMessage recivedMessage = null;
+		PeerMessage sendMessage = null;
+		boolean finished = false;
+		String fileToSend = null;
+		while(!socket.isClosed() || !finished) {
+			try {
+				recivedMessage = PeerMessage.readMessageFromInputStream(dis);
+			} catch (IOException e) {
+				System.err.println("[-] Error reading message from input stream on [serveFilesToClient]");
+				sendMessage = new PeerMessage(PeerMessageOps.OPCODE_ERROR);
+				try {
+					sendMessage.writeMessageToOutputStream(dos);
+				} catch (IOException e1) {
+					System.err.println("[-] Error writing message to output stream on [serveFilesToClient]");
+				}
+				return;
+			}
+			
+			// Actuar en función del tipo de mensaje recibido
+			switch(recivedMessage.getOpcode()) {
+				case PeerMessageOps.OPCODE_CORRUPT_DOWNLOAD:
+					finished = true;
+					sendMessage = new PeerMessage(PeerMessageOps.OPCODE_ERROR);
+					break;
+				case PeerMessageOps.OPCODE_DOWNLOAD_FILE:
+					String substringName = recivedMessage.getSubstring();
+					FileInfo[] files = FileInfo.lookupFilenameSubstring(NanoFiles.db.getFiles(),substringName);
+					if (files.length == 0) {
+						sendMessage = new PeerMessage(PeerMessageOps.OPCODE_NOT_FOUND);
+						break;
+					}
+					else if (files.length > 1) {
+						sendMessage = new PeerMessage(PeerMessageOps.OPCODE_AMBIGUOUS_NAME);
+						break;
+					}
+					else {
+						String hash = FileDigest.computeFileChecksumString(files[0].getFileName());
+						sendMessage = PeerMessage.PeerMessageDownloadAprove(hash);
+						fileToSend = files[0].getFileName();
+						break;
+					}
 
-		
-		/*
-		 * TODO: (Boletín SocketsTCP) Para servir un fichero, hay que localizarlo a
-		 * partir de su hash (o subcadena) en nuestra base de datos de ficheros
-		 * compartidos. Los ficheros compartidos se pueden obtener con
-		 * NanoFiles.db.getFiles(). Los métodos lookupHashSubstring y
-		 * lookupFilenameSubstring de la clase FileInfo son útiles para buscar ficheros
-		 * coincidentes con una subcadena dada del hash o del nombre del fichero. El
-		 * método lookupFilePath() de FileDatabase devuelve la ruta al fichero a partir
-		 * de su hash completo.
-		 */
+				case PeerMessageOps.OPCODE_GET_CHUNCK:
+					double fileOffset = recivedMessage.getFileOffset();
+					int chunkSize = recivedMessage.getChunckSize();
+					if (fileOffset == 0 && chunkSize == 0) {
+						finished = true;
+						break;
+					}
+					byte[] data = readChunk(fileToSend, fileOffset, chunkSize);
+					if (data == null) {
+						sendMessage = new PeerMessage(PeerMessageOps.OPCODE_ERROR);
+						finished = true;
+						break;
+					}
+					sendMessage = PeerMessage.PeerMessageSendChunk(data);
+					break;
+				default:
+					sendMessage = new PeerMessage(PeerMessageOps.OPCODE_INVALID_CODE);
+					finished = true;
+					break;
+			}
 
+			// Enviar el mensaje de respuesta al cliente
+			try {
+				if (sendMessage != null) {
+					sendMessage.writeMessageToOutputStream(dos);
+				}
+			} catch (IOException e) {
+				System.err.println("[-] Error writing message to output stream on [serveFilesToClient]");
+				sendMessage = new PeerMessage(PeerMessageOps.OPCODE_ERROR);
+				try {
+					sendMessage.writeMessageToOutputStream(dos);
+				} catch (IOException e1) {
+					System.err.println("[-] Error writing message to output stream on [serveFilesToClient]");
+				}
+				finished = true;
+			}
+		}
+	}
 
+	private static byte[] readChunk(String filePath, double _fileOffset, int _chunkSize) {
+		byte[] data = new byte[_chunkSize];
 
+		RandomAccessFile raf = null;
+
+		try {
+			raf = new RandomAccessFile(filePath, "r");
+			long fileOffset = (long) _fileOffset;
+			raf.seek(fileOffset);
+			int readBytes = raf.read(data, 0, _chunkSize);
+
+			// Si se han leído menos bytes de los esperados, redimensionar el array
+			if (readBytes < _chunkSize) {
+				byte[] newData = new byte[readBytes];
+				System.arraycopy(data, 0, newData, 0, readBytes);
+				data = newData;
+			}
+
+			
+		} catch (IOException e) {
+			System.err.println("[-] Error reading chunk from file: " + e.getMessage());
+			data = null;
+			
+		} finally {
+			if (raf != null) {
+				try {
+					raf.close();
+				} catch (IOException e) {
+					System.err.println("[-] Error closing file: " + e.getMessage());
+				}
+			}
+		}
+	
+		return data;
 	}
 
 

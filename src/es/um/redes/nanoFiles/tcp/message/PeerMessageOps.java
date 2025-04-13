@@ -22,7 +22,7 @@ public class PeerMessageOps {
 	public static final byte OPCODE_UPLOAD = 10;
 	public static final byte OPCODE_UPLOAD_APROVE = 11;
 	public static final byte OPCODE_UPLOAD_DENY = 12;
-
+	public static final byte OPCODE_ERROR = 13;
 
 
 
@@ -42,6 +42,7 @@ public class PeerMessageOps {
 			OPCODE_UPLOAD,
 			OPCODE_UPLOAD_APROVE,
 			OPCODE_UPLOAD_DENY,
+			OPCODE_ERROR,
 	};
 	private static final String[] _valid_operations_str = { "INVALID_OPCODE",
 			"NOT_FOUND",
@@ -54,6 +55,7 @@ public class PeerMessageOps {
 			"UPLOAD",
 			"UPLOAD_APROVE",
 			"UPLOAD_DENY",
+			"ERROR",
 	};
 
 	private static Map<String, Byte> _operation_to_opcode;

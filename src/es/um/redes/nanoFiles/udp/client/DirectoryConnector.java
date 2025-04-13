@@ -305,7 +305,7 @@ public class DirectoryConnector {
 		// Enviar peticion
 		byte[] responseData = sendAndReceiveDatagrams(requestData);
 		if (responseData==null) {
-			System.err.println("[-] No data received in registerFileServer");
+			System.err.println("[-] No data received in registerFileServer, the fles could not be published");
 			return success;
 		}
 		DirMessage responseMessage = null;

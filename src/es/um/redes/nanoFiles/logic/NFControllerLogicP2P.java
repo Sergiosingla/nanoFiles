@@ -56,10 +56,7 @@ public class NFControllerLogicP2P {
 			try {
 				fileServer = new NFServer();
 				
-				Thread serverThread = new Thread(() -> {
-					fileServer.run(); // Ejecutar el método run del servidor
-				});
-				serverThread.start();
+				fileServer.startServer();
 				int port = this.getServerPort();
 				if (port > 0) {
 					System.out.println("[+] NFServer running on " + this.getServerPort() + ".");
@@ -170,10 +167,29 @@ public class NFControllerLogicP2P {
 				return downloaded;
 			}
 		}
-		File localFile = new File(localFileName);
+
+		// Creacion de la carpeta para descargas y archivo a descargar
+		File theDir = new File(NanoFiles.DEFAULT_DOWNLOADS_DIRNAME);
+		if (!theDir.exists()) {
+			theDir.mkdirs();
+		}
+		File localFile = new File(theDir, localFileName);
 		if (localFile.exists()) {
-			System.err.println("[-] Error: File " + localFileName + " already exists");
+			System.err.println("[-] Error: File \"" + localFileName + "\" already exists");
 			return downloaded;
+		}
+		else {
+			try {
+				if (localFile.createNewFile()) {
+					System.out.println("[*] Creating file " + localFile );
+				} else {
+					System.err.println("[-] Error: Could not create file " + localFile.getAbsolutePath());
+					return downloaded;
+				}
+			} catch (IOException e) {
+				System.err.println("[-] Error creating file: " + e.getMessage());
+				return downloaded;
+			}
 		}
 
 
@@ -212,9 +228,6 @@ public class NFControllerLogicP2P {
 		} else {
 			System.err.println("File server is not running");
 		}
-
-
-
 	}
 
 	protected boolean serving() {

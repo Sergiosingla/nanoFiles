@@ -171,6 +171,14 @@ public class PeerMessage {
 			message = new PeerMessage(PeerMessageOps.OPCODE_AMBIGUOUS_NAME);
 			break;
 		}
+		case PeerMessageOps.OPCODE_ERROR: {
+			message = new PeerMessage(PeerMessageOps.OPCODE_ERROR);
+			break;
+		}
+		case PeerMessageOps.OPCODE_UPLOAD: {
+			message = new PeerMessage(PeerMessageOps.OPCODE_UPLOAD);
+			break;
+		}
 		case PeerMessageOps.OPCODE_DOWNLOAD_FILE: {
 			int length = dis.readInt();
 			String substringName = new String(dis.readNBytes(length));
@@ -226,6 +234,7 @@ public class PeerMessage {
 		case PeerMessageOps.OPCODE_INVALID_CODE: 
 		case PeerMessageOps.OPCODE_NOT_FOUND:
 		case PeerMessageOps.OPCODE_AMBIGUOUS_NAME:
+		case PeerMessageOps.OPCODE_ERROR:
 		case PeerMessageOps.OPCODE_CORRUPT_DOWNLOAD:
 			break;
 		case PeerMessageOps.OPCODE_DOWNLOAD_FILE: {
