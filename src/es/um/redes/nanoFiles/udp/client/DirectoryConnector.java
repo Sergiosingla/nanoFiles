@@ -1,6 +1,5 @@
 package es.um.redes.nanoFiles.udp.client;
 
-import java.awt.image.ImagingOpException;
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
@@ -108,7 +107,7 @@ public class DirectoryConnector {
 		
 		boolean successfulReceive = false;
 		int attempts = 0;
-		int maxRetries = 5;
+		int maxRetries = MAX_NUMBER_OF_ATTEMPTS;
 		while(!successfulReceive && attempts < maxRetries) {
 			try {
 				socket.send(packetToServer);
@@ -365,7 +364,6 @@ public class DirectoryConnector {
 		try {
 			responseMessage = DirMessage.fromString(new String(responseData,0,responseData.length));
 		} catch (Exception e) {
-			System.err.println("[-] Error: Not posible parsing message.");
 			return filelist;
 		}
 
@@ -450,8 +448,39 @@ public class DirectoryConnector {
 	public boolean unregisterFileServer() {
 		boolean success = false;
 
+		DirMessage msgUnregister = new DirMessage(DirMessageOps.OPERATION_UNREGISTER_SERVER);
+		byte[] requestData = msgUnregister.toString().getBytes();
 
+		// Enviar request_server_list
+		byte[] responseData = sendAndReceiveDatagrams(requestData);
+		if (responseData==null) {
+			System.err.println("[-] Error: No data recived in getServersSharingThisFile");
+			return success;
+		}
 
+		DirMessage responseMessage = null;
+		try {
+			responseMessage = DirMessage.fromString(new String(responseData,0,responseData.length));
+		} catch (Exception e) {
+			System.err.println("[-] Error: Not posible parsing message.");
+			return success;
+		}
+
+		// Tratamiento de la respuesta
+		assert (responseMessage!=null);
+
+		switch (responseMessage.getOperation()) {
+			case DirMessageOps.OPERATION_UNREGISTER_SERVER_OK: {
+				success = true;
+				break;
+			}
+			case DirMessageOps.OPERATION_UNREGISTER_SERVER_FAIL: {
+				System.err.println("[-] Error in unregisterServer. Response ("+DirMessageOps.OPERATION_UNREGISTER_SERVER_FAIL+")");
+				break;
+			}
+			default:
+				break;
+		}
 
 		return success;
 	}

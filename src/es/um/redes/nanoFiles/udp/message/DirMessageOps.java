@@ -29,6 +29,11 @@ public class DirMessageOps {
 	public static final String OPERATION_REQUEST_SERVERS_LIST_OK = "request_servers_list_ok";
 	public static final String OPERATION_REQUEST_SERVERS_LIST_FAIL = "request_servers_list_fail";
 
+	// Mensajes para darse de baja como servidor
+	public static final String OPERATION_UNREGISTER_SERVER = "unregister_server";
+	public static final String OPERATION_UNREGISTER_SERVER_OK = "unregister_server_ok";
+	public static final String OPERATION_UNREGISTER_SERVER_FAIL = "unregister_server_fail";
+
 	
 
 

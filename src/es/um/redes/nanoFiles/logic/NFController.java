@@ -207,7 +207,7 @@ public class NFController {
 	 */
 	private boolean canProcessCommandInCurrentState() {
 		/*
-		 * TODO: (Boletín Autómatas) Para cada comando tecleado en el shell
+		 * (Boletín Autómatas) Para cada comando tecleado en el shell
 		 * (currentCommand), comprobar "currentState" para ver si dicho comando es
 		 * válido según el estado actual del autómata, ya que no todos los comandos
 		 * serán válidos en cualquier estado. Este método NO debe modificar
@@ -238,7 +238,7 @@ public class NFController {
 			break;
 		}
 		case NFCommands.COM_QUIT: {
-			if (currentState!=ONLINE || currentState!=OFFLINE) {
+			if (currentState!=ONLINE && currentState!=OFFLINE) {
 				System.err.println("[-] Error: You must ping before introduce any other command.");
 				commandAllowed=false;
 			}
@@ -277,11 +277,9 @@ public class NFController {
 			break;
 		}
 		case NFCommands.COM_HELP: {
-			currentState = ONLINE;
 			break;
 		}
 		case NFCommands.COM_MYFILES: {
-			currentState = ONLINE;
 			break;
 		}
 		case NFCommands.COM_PING: {

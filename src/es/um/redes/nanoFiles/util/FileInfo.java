@@ -40,6 +40,14 @@ public class FileInfo {
 		return fileHash;
 	}
 
+	public long getFileSize(){
+		return fileSize;
+	}
+
+	public String getFilePath(){
+		return filePath;
+	}
+
 	public String toString() {
 		StringBuffer strBuf = new StringBuffer();
 

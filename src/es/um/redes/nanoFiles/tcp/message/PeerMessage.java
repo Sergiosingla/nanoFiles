@@ -2,21 +2,11 @@ package es.um.redes.nanoFiles.tcp.message;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
-import java.io.EOFException;
-import java.io.File;
 import java.io.IOException;
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.net.UnknownHostException;
-import java.nio.ByteBuffer;
 
-import es.um.redes.nanoFiles.util.FileInfo;
+import es.um.redes.nanoFiles.application.NanoFiles;
 
 public class PeerMessage {
-
-	// Tamaño default de un chunk: 4000 bytes
-	private static final int DEFAULT_CHUNK_SIZE = 4000;
-
 
 	private byte opcode;
 
@@ -31,6 +21,7 @@ public class PeerMessage {
 	private double fileOffset;
 	private int chunckSize;
 	private byte[] chunckData;
+	private double fileSize;
 
 
 
@@ -49,9 +40,10 @@ public class PeerMessage {
 		return msg;
 	}
 
-	public static PeerMessage PeerMessageDownloadAprove(String hashCode) {
+	public static PeerMessage PeerMessageDownloadAprove(String hashCode, double fileSize) {
 		PeerMessage msg = new PeerMessage(PeerMessageOps.OPCODE_DOWNLOAD_APROVE);
 		//System.out.println("Creating download aprove message with hash: " + hashCode);
+		msg.setFileSize(fileSize);
 		msg.setHashCode(hashCode);
 		return msg;
 	}
@@ -64,7 +56,7 @@ public class PeerMessage {
 	}
 
 	public static PeerMessage PeerMessageGetChunck(double _fileOffset) {
-		return PeerMessageGetChunck(_fileOffset,DEFAULT_CHUNK_SIZE);
+		return PeerMessageGetChunck(_fileOffset,NanoFiles.DEFAULT_CHUNK_SIZE);
 	}
 
 	// Constructor donde solo se pasa la data, su longuitud se calcula
@@ -91,6 +83,14 @@ public class PeerMessage {
 	 */
 	public byte getOpcode() {
 		return opcode;
+	}
+
+	public void setFileSize(double _fileSize){
+		this.fileSize=_fileSize;
+	}
+
+	public double getFileSize(){
+		return fileSize;
 	}
 
 	public void setSubstring(String substring) {
@@ -186,10 +186,12 @@ public class PeerMessage {
 			break;
 		}
 		case PeerMessageOps.OPCODE_DOWNLOAD_APROVE: {
+			double fileSize;
 			byte[] hashBytes = new byte[40];
+			fileSize = dis.readDouble();
 			dis.readFully(hashBytes);
 			String hash = new String(hashBytes).trim();
-			message = PeerMessageDownloadAprove(hash);
+			message = PeerMessageDownloadAprove(hash,fileSize);
 			break;
 		}
 		case PeerMessageOps.OPCODE_CORRUPT_DOWNLOAD: {
@@ -243,6 +245,7 @@ public class PeerMessage {
 			break;
 		}
 		case PeerMessageOps.OPCODE_DOWNLOAD_APROVE: {
+			dos.writeDouble(fileSize);
 			dos.write(hashCode.getBytes());
 			break;
 		}

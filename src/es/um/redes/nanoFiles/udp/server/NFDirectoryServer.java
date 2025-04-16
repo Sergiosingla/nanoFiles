@@ -9,8 +9,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import es.um.redes.nanoFiles.application.NanoFiles;
@@ -354,6 +356,59 @@ public class NFDirectoryServer {
 
 			break;
 		}
+		// Unregister server file
+		case DirMessageOps.OPERATION_UNREGISTER_SERVER: {
+			try {
+				// Obtener la dirección del servidor que envió el paquete
+				InetSocketAddress serverAddress = new InetSocketAddress(pkt.getAddress(), NFServer.PORT);
+		
+				// Lista para almacenar los archivos que serán desregistrados
+				List<FileInfo> filesToUnregister = new ArrayList<>();
+		
+				// Usar un iterador para recorrer el mapa y eliminar entradas de manera segura
+				Iterator<Map.Entry<String, Set<InetSocketAddress>>> iterator = serversByFile.entrySet().iterator();
+				while (iterator.hasNext()) {
+					Map.Entry<String, Set<InetSocketAddress>> entry = iterator.next();
+					String fileHash = entry.getKey();
+					Set<InetSocketAddress> serverSet = entry.getValue();
+
+					if (serverSet.contains(serverAddress)) {
+						// Eliminar el servidor del conjunto
+						serverSet.remove(serverAddress);
+
+						// Si el conjunto queda vacío, eliminar la entrada del mapa
+						if (serverSet.isEmpty()) {
+							iterator.remove();
+						}
+
+						// Agregar el archivo a la lista de desregistrados
+						filesToUnregister.add(Arrays.stream(filesDirectory)
+								.filter(file -> file.getFileHash().equals(fileHash))
+								.findFirst()
+								.orElse(null));
+					}
+				}
+
+		
+				// Actualizar filesDirectory eliminando los archivos desregistrados
+				List<FileInfo> fileList = new ArrayList<>(Arrays.asList(filesDirectory));
+				fileList.removeIf(file -> filesToUnregister.contains(file));
+				filesDirectory = fileList.toArray(new FileInfo[0]);
+		
+				// Enviar respuesta de éxito
+				msgToSend = new DirMessage(DirMessageOps.OPERATION_UNREGISTER_SERVER_OK);
+				System.out.println("[+] SUCCESS on " + DirMessageOps.OPERATION_UNREGISTER_SERVER);
+				System.out.println("[+] Files unregistered for server: " + serverAddress);
+			} catch (Exception e) {
+				e.printStackTrace();
+				// Enviar respuesta de error
+				msgToSend = new DirMessage(DirMessageOps.OPERATION_UNREGISTER_SERVER_FAIL);
+				System.err.println("[-] Error by " + DirMessageOps.OPERATION_UNREGISTER_SERVER);
+				System.err.println("[-] Sending response... " + DirMessageOps.OPERATION_UNREGISTER_SERVER_FAIL);
+			}
+			break;
+		}
+
 
 		// Proccess request_servers_list
 		case DirMessageOps.OPERATION_REQUEST_SERVERS_LIST: {

@@ -17,16 +17,11 @@ public class NFServerThread extends Thread {
 
 	@Override
 	public void run() {
+		NFServer.serveFilesToClient(clientSocket);
 		try {
-			NFServer.serveFilesToClient(clientSocket);
+			clientSocket.close();
 		} catch (Exception e) {
-			System.err.println("[-] Error during download: " + e.getMessage());
-		} finally {
-			try {
-				clientSocket.close();
-			} catch (Exception e) {
-				System.err.println("[-] Error closing client socket: " + e.getMessage());
-			}
+			return;
 		}
 	}
 

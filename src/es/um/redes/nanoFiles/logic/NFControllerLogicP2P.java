@@ -1,15 +1,22 @@
 package es.um.redes.nanoFiles.logic;
 
 import java.net.InetSocketAddress;
+import java.util.ArrayList;
+import java.util.Iterator;
 import java.io.File;
 import java.io.IOException;
+import java.io.RandomAccessFile;
+
 import es.um.redes.nanoFiles.tcp.client.NFConnector;
+import es.um.redes.nanoFiles.tcp.message.PeerMessage;
+import es.um.redes.nanoFiles.tcp.message.PeerMessageOps;
 import es.um.redes.nanoFiles.application.NanoFiles;
 
 
 
 import es.um.redes.nanoFiles.tcp.server.NFServer;
-import es.um.redes.nanoFiles.tcp.server.NFServerThread;
+import es.um.redes.nanoFiles.util.FileDatabase;
+import es.um.redes.nanoFiles.util.FileDigest;
 import es.um.redes.nanoFiles.util.FileInfo;
 
 public class NFControllerLogicP2P {
@@ -135,9 +142,11 @@ public class NFControllerLogicP2P {
 	 */
 	protected boolean downloadFileFromServers(InetSocketAddress[] serverAddressList, String targetFileNameSubstring,
 			String localFileName) {
+		
 		boolean downloaded = false;
 
 		if (serverAddressList.length == 0) {
+			System.err.println("[-] No file currently being served matches the specified file name \""+targetFileNameSubstring+"\".");
 			System.err.println("* Cannot start download - No list of server addresses provided");
 			return false;
 		}
@@ -156,15 +165,14 @@ public class NFControllerLogicP2P {
 		 * método. Si se produce una excepción de entrada/salida (error del que no es
 		 * posible recuperarse), se debe informar sin abortar el programa
 		 */
-		NFConnector[] nfConnectors = new NFConnector[serverAddressList.length];
-		for (int i = 0; i < serverAddressList.length; i++) {
+		ArrayList<NFConnector> nfConnectors = new ArrayList<>();
+		for (InetSocketAddress serverAddress : serverAddressList) {
 			try {
-				System.out.println("[+] Connecting to server " + serverAddressList[i].getHostString() + ":" + serverAddressList[i].getPort());
-				nfConnectors[i] = new NFConnector(new InetSocketAddress(serverAddressList[i].getAddress(), serverAddressList[i].getPort()));
+				System.out.println("[+] Connecting to server " + serverAddress.getHostString() + ":" + serverAddress.getPort());
+				nfConnectors.add(new NFConnector(new InetSocketAddress(serverAddress.getAddress(), serverAddress.getPort())));
 			} catch (IOException e) {
 				e.printStackTrace();
-				System.err.println("[-] Error: Cannot connect to server " + serverAddressList[i].getHostString()+ ":" + serverAddressList[i].getPort());
-				return downloaded;
+				System.err.println("[-] Error: Cannot connect to server " + serverAddress.getHostString() + ":" + serverAddress.getPort());
 			}
 		}
 
@@ -173,7 +181,11 @@ public class NFControllerLogicP2P {
 		if (!theDir.exists()) {
 			theDir.mkdirs();
 		}
+
+		// Fichero que se va descargar
 		File localFile = new File(theDir, localFileName);
+
+
 		if (localFile.exists()) {
 			System.err.println("[-] Error: File \"" + localFileName + "\" already exists");
 			return downloaded;
@@ -192,12 +204,146 @@ public class NFControllerLogicP2P {
 			}
 		}
 
-
+		/*
+		   OPCODE_ERROR:	CORRUPT_DOWNLOAD / GET_CHUNK
+			fallo al enviar algo
+			al recibir CORRUPT_DOWNLOAD
+			fallo al leer los bytes del fichero
+		 */
 		
+		// Solicitud de descarga del fichero targetFileNameSubstring
+		PeerMessage msgDownloadFile = PeerMessage.PeerMessageDownloadFile(targetFileNameSubstring);
+		PeerMessage msgRecivedFromPeer;
+
+		// Hash y tamaño del archivo a descargar
+		String expectedFileHash = null;
+		double expectedFileSize = -1;
+
+		Iterator<NFConnector> it = nfConnectors.iterator();
+		while(it.hasNext()){
+			NFConnector connector = it.next();
+			msgRecivedFromPeer = connector.sendAndRecive(msgDownloadFile);
+
+			if (msgRecivedFromPeer != null) {
+				// Si la solicitud de descarga para este nfconnector no es aprobada los quitamos de la lista
+			if (msgRecivedFromPeer.getOpcode()!=PeerMessageOps.OPCODE_DOWNLOAD_APROVE) {
+				switch (msgRecivedFromPeer.getOpcode()) {
+					case PeerMessageOps.OPCODE_NOT_FOUND: {
+						System.err.println("\t[-] Host "+connector.getServerAddr()+" did not found the file. Removing from hosts list");
+						it.remove();
+						break;
+					}
+					case PeerMessageOps.OPCODE_AMBIGUOUS_NAME: {
+						System.err.println("\t[-] Host "+connector.getServerAddr()+" has more than one file that matches "+targetFileNameSubstring+". Removing from hosts list");
+						it.remove();
+						break;
+					}
+					default:{
+						System.out.println("\t[-] Host "+connector.getServerAddr()+" did not aprove download. Removing from hosts list");
+						it.remove();
+						break;
+					}
+				}
+			}
+			else{
+				// Si es la primera aprobación, guardamos el hash y el tamaño esperados
+				if (expectedFileHash == null && expectedFileSize == -1) {
+					expectedFileHash = msgRecivedFromPeer.getHashCode();
+					expectedFileSize = msgRecivedFromPeer.getFileSize();
+				} else {
+					// Verificar si el hash o el tamaño no coinciden
+					if (!expectedFileHash.equals(msgRecivedFromPeer.getHashCode()) || expectedFileSize != msgRecivedFromPeer.getFileSize()) {
+						System.err.println("\t[-] Host " + connector.getServerAddr() + " returned inconsistent file data (Hash/Size mismatch). Removing from hosts list");
+						it.remove();
+					} else {
+						System.out.println("[+] Host " + connector.getServerAddr() + " approved download with consistent data.");
+					}
+				}
+			}
+			} else {
+				System.err.println("[-] Host has not response. Removing from hosts list.");
+				it.remove();
+				localFile.delete();
+        		return downloaded;
+			}			
+		}
+		// Si no hay hosts disponibles abortamos
+		if (nfConnectors.isEmpty()) {
+			System.err.println("[-] No hosts available for download. Aborting...");
+			localFile.delete();
+        	return downloaded;
+		}
+
+		System.out.println("[*] Stating download from "+nfConnectors.size()+ " hosts....");
+
+		// Logica para descargar y esciribr en localFile
+		int numHosts = nfConnectors.size();
+		int defChunkSize = NanoFiles.DEFAULT_CHUNK_SIZE;
+		int numChunks = (int) (expectedFileSize/defChunkSize);
+		int lastChunkSize = (int) (expectedFileSize%defChunkSize);
+
+		// Contador de numero de chunks por host
+		int[] hostChunkCount = new int[numHosts];
+
+		try(RandomAccessFile raf = new RandomAccessFile(localFile, "rw")){
+
+			int totalChunks = (lastChunkSize>0) ? numChunks+1 : numChunks;
+
+			for (int chunkIndex=0; chunkIndex<totalChunks; chunkIndex++) {
+				int hostIndex = chunkIndex%numHosts;
+				NFConnector downloadConnector = nfConnectors.get(hostIndex);
+				
+				// Calculo del offset y chunkSize actual
+				long fileOffset = chunkIndex * defChunkSize;
+				int localChunkSize = (chunkIndex == numChunks) ? lastChunkSize : defChunkSize;
+
+				// Solicitud del chunk
+				PeerMessage msgGetChunk = PeerMessage.PeerMessageGetChunck(fileOffset,localChunkSize);
+				PeerMessage msgChunkResponse = downloadConnector.sendAndRecive(msgGetChunk);
+
+				if (msgChunkResponse.getOpcode()==PeerMessageOps.OPCODE_SEND_CHUNK){
+					byte[] chunckData = msgChunkResponse.getChunckData();
+					
+					// Esciribir en el fichero
+					raf.seek(fileOffset);
+					raf.write(chunckData);
+
+					hostChunkCount[hostIndex]++;
+				} else {
+					System.err.println("[-] Failed to download chunk " + chunkIndex + " from host " + downloadConnector.getServerAddr());
+					localFile.delete();
+            		return false;
+				}
 
 
+			}
+			// Comprobacion del nuevo hash para que coincida
 
+			// Si el hash es diferente ha habido alguna mutacion
+			if (!FileDigest.computeFileChecksumString(localFile.getAbsolutePath()).equals(expectedFileHash)){
+				System.err.println("[-] Error: File integrity check failed. The downloaded file is corrupt. The computed hash does not match the expected hash.");
+				localFile.delete();
+				return false;
+			}
+
+			downloaded = true;	// Se ha completado la descarga con exito
+			System.out.println("[*] File download successfully.");
+			System.out.println("[*] Summary:");
+			printSummary(nfConnectors,hostChunkCount,totalChunks);
+
+		}catch(IOException e){
+			System.err.println("[-] Error writing to local file: " + e.getMessage());
+			localFile.delete();
+			return false;
+		}
 		return downloaded;
+	}
+
+
+	private void printSummary(ArrayList<NFConnector> connectors, int[] summary, int totalChunks){
+		for (int i=0; i<summary.length; i++) {
+			System.out.println("\t Host "+connectors.get(i).getServerAddr()+" downloaded "+((double)summary[i]/(double)totalChunks)*100+"% ("+summary[i]+" chunks)" );
+		}
 	}
 
 	/**
@@ -233,10 +379,9 @@ public class NFControllerLogicP2P {
 	protected boolean serving() {
 		boolean result = false;
 
-
+		result = (fileServer==null) ? false : true;
 
 		return result;
-
 	}
 
 	protected boolean uploadFileToServer(FileInfo matchingFile, String uploadToServer) {

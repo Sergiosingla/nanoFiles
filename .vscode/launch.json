@@ -1,0 +1,51 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "java",
+            "name": "Current File",
+            "request": "launch",
+            "mainClass": "${file}"
+        },
+        {
+            "type": "java",
+            "name": "Directory",
+            "request": "launch",
+            "mainClass": "es.um.redes.nanoFiles.application.Directory",
+            "projectName": "nanoFilesP2Palumnos"
+        },
+        {
+            "type": "java",
+            "name": "Directory_loss_0.9",
+            "request": "launch",
+            "mainClass": "es.um.redes.nanoFiles.application.Directory",
+            "projectName": "nanoFilesP2Palumnos",
+            "args" : "-loss 0.9"
+        },
+        {
+            "type": "java",
+            "name": "Directory_loss_1",
+            "request": "launch",
+            "mainClass": "es.um.redes.nanoFiles.application.Directory",
+            "projectName": "nanoFilesP2Palumnos",
+            "args" : "-loss 1.0"
+        },
+        {
+            "type": "java",
+            "name": "NanoFiles",
+            "request": "launch",
+            "mainClass": "es.um.redes.nanoFiles.application.NanoFiles",
+            "projectName": "nanoFilesP2Palumnos"
+        },
+        {
+            "type": "java",
+            "name": "PeerMessageTest",
+            "request": "launch",
+            "mainClass": "es.um.redes.nanoFiles.tcp.message.PeerMessageTest",
+            "projectName": "nanoFilesP2Palumnos"
+        }
+    ]
+}

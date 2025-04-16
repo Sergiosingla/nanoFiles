@@ -1,9 +1,6 @@
 package es.um.redes.nanoFiles.tcp.server;
-
-import java.io.DataInput;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.net.InetSocketAddress;
@@ -13,7 +10,6 @@ import java.net.Socket;
 import es.um.redes.nanoFiles.application.NanoFiles;
 import es.um.redes.nanoFiles.tcp.message.PeerMessage;
 import es.um.redes.nanoFiles.tcp.message.PeerMessageOps;
-import es.um.redes.nanoFiles.util.FileDatabase;
 import es.um.redes.nanoFiles.util.FileDigest;
 import es.um.redes.nanoFiles.util.FileInfo;
 
@@ -72,7 +68,7 @@ public class NFServer implements Runnable {
 				socket = serverSocket.accept();
 				connection = true;
 			} catch (IOException e) {
-				System.err.println("[-] Error accepting connection from client");
+				break;
 			}
 			/*
 			 * (Boletín SocketsTCP) Tras aceptar la conexión con un peer cliente, la
@@ -182,6 +178,11 @@ public class NFServer implements Runnable {
 	}
 
 	public void stopServer() {
+		try {
+			serverSocket.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 		stopServer = true;
 	}
 
@@ -205,7 +206,6 @@ public class NFServer implements Runnable {
 			dos = new DataOutputStream(socket.getOutputStream());
 		}
 		catch (IOException e) {
-			System.err.println("[-] Error creating DataInputStream/DataOutputStream");
 			return;
 		}
 		
@@ -221,8 +221,10 @@ public class NFServer implements Runnable {
 		String fileToSend = null;
 		while(!socket.isClosed() || !finished) {
 			try {
+				// Lecutra del mensaje del cliente 
 				recivedMessage = PeerMessage.readMessageFromInputStream(dis);
 			} catch (IOException e) {
+				// En caso de error al enviar, se enviar OPCODE_ERROR
 				System.err.println("[-] Error reading message from input stream on [serveFilesToClient]");
 				sendMessage = new PeerMessage(PeerMessageOps.OPCODE_ERROR);
 				try {
@@ -235,10 +237,13 @@ public class NFServer implements Runnable {
 			
 			// Actuar en función del tipo de mensaje recibido
 			switch(recivedMessage.getOpcode()) {
+				// Descargar corrupta por parte del cliente --> enviarmos OPCODE_ERROR
 				case PeerMessageOps.OPCODE_CORRUPT_DOWNLOAD:
 					finished = true;
 					sendMessage = new PeerMessage(PeerMessageOps.OPCODE_ERROR);
 					break;
+				
+				// El cliente solicita descargar un archivo
 				case PeerMessageOps.OPCODE_DOWNLOAD_FILE:
 					String substringName = recivedMessage.getSubstring();
 					FileInfo[] files = FileInfo.lookupFilenameSubstring(NanoFiles.db.getFiles(),substringName);
@@ -250,13 +255,15 @@ public class NFServer implements Runnable {
 						sendMessage = new PeerMessage(PeerMessageOps.OPCODE_AMBIGUOUS_NAME);
 						break;
 					}
-					else {
-						String hash = FileDigest.computeFileChecksumString(files[0].getFileName());
-						sendMessage = PeerMessage.PeerMessageDownloadAprove(hash);
-						fileToSend = files[0].getFileName();
+					else {	// Caso de exito, se ha encontrado el fichero, se manda su hash y su tamaño
+
+						String hash = FileDigest.computeFileChecksumString(files[0].getFilePath());
+						double fileSize = (double) files[0].getFileSize();
+						sendMessage = PeerMessage.PeerMessageDownloadAprove(hash,fileSize);
+						fileToSend = files[0].getFilePath();
 						break;
 					}
-
+				// Una vez el cliente sabe que fichero es, solicita los bytes de dicho fichero
 				case PeerMessageOps.OPCODE_GET_CHUNCK:
 					double fileOffset = recivedMessage.getFileOffset();
 					int chunkSize = recivedMessage.getChunckSize();
@@ -264,6 +271,7 @@ public class NFServer implements Runnable {
 						finished = true;
 						break;
 					}
+					// Leectura de los bytes del fichero fileToSend
 					byte[] data = readChunk(fileToSend, fileOffset, chunkSize);
 					if (data == null) {
 						sendMessage = new PeerMessage(PeerMessageOps.OPCODE_ERROR);
@@ -283,7 +291,7 @@ public class NFServer implements Runnable {
 				if (sendMessage != null) {
 					sendMessage.writeMessageToOutputStream(dos);
 				}
-			} catch (IOException e) {
+			} catch (IOException e) {	// Si hay fallo al enviar se prueba a enviar OPCODE_ERROR
 				System.err.println("[-] Error writing message to output stream on [serveFilesToClient]");
 				sendMessage = new PeerMessage(PeerMessageOps.OPCODE_ERROR);
 				try {
