@@ -15,7 +15,6 @@ import es.um.redes.nanoFiles.application.NanoFiles;
 
 
 import es.um.redes.nanoFiles.tcp.server.NFServer;
-import es.um.redes.nanoFiles.util.FileDatabase;
 import es.um.redes.nanoFiles.util.FileDigest;
 import es.um.redes.nanoFiles.util.FileInfo;
 
@@ -168,8 +167,18 @@ public class NFControllerLogicP2P {
 		ArrayList<NFConnector> nfConnectors = new ArrayList<>();
 		for (InetSocketAddress serverAddress : serverAddressList) {
 			try {
-				System.out.println("[+] Connecting to server " + serverAddress.getHostString() + ":" + serverAddress.getPort());
-				nfConnectors.add(new NFConnector(new InetSocketAddress(serverAddress.getAddress(), serverAddress.getPort())));
+				// Obtener la dirección IP o el nombre del host
+				String host = serverAddress.getHostString();
+
+				// Validar que el host no sea nulo o vacío
+				if (host == null || host.isEmpty()) {
+					throw new IllegalArgumentException("Invalid host: " + serverAddress);
+				}
+
+				// Crear el NFConnector con la dirección y el puerto
+				System.out.println("[+] Connecting to server " + serverAddress);
+				NFConnector connector = new NFConnector(serverAddress);
+				nfConnectors.add(connector);
 			} catch (IOException e) {
 				e.printStackTrace();
 				System.err.println("[-] Error: Cannot connect to server " + serverAddress.getHostString() + ":" + serverAddress.getPort());
@@ -250,6 +259,7 @@ public class NFControllerLogicP2P {
 				if (expectedFileHash == null && expectedFileSize == -1) {
 					expectedFileHash = msgRecivedFromPeer.getHashCode();
 					expectedFileSize = msgRecivedFromPeer.getFileSize();
+					System.out.println("[+] Host " + connector.getServerAddr() + " approved download with consistent data.");
 				} else {
 					// Verificar si el hash o el tamaño no coinciden
 					if (!expectedFileHash.equals(msgRecivedFromPeer.getHashCode()) || expectedFileSize != msgRecivedFromPeer.getFileSize()) {
@@ -301,6 +311,13 @@ public class NFControllerLogicP2P {
 				PeerMessage msgGetChunk = PeerMessage.PeerMessageGetChunck(fileOffset,localChunkSize);
 				PeerMessage msgChunkResponse = downloadConnector.sendAndRecive(msgGetChunk);
 
+				// Si hay un corte en la conexion, no se recibe mensaje por lo que se debe salir de manera controlada
+				if(msgChunkResponse==null) {
+					System.err.println("[-] Failed to download, the conexion has been closed or the host have not replied. Aborting download.... ");
+					localFile.delete();
+            		return false;
+				}
+
 				if (msgChunkResponse.getOpcode()==PeerMessageOps.OPCODE_SEND_CHUNK){
 					byte[] chunckData = msgChunkResponse.getChunckData();
 					
@@ -335,6 +352,9 @@ public class NFControllerLogicP2P {
 			System.err.println("[-] Error writing to local file: " + e.getMessage());
 			localFile.delete();
 			return false;
+		}catch(NullPointerException e) {
+			localFile.delete();
+			return false;
 		}
 		return downloaded;
 	}
@@ -342,7 +362,8 @@ public class NFControllerLogicP2P {
 
 	private void printSummary(ArrayList<NFConnector> connectors, int[] summary, int totalChunks){
 		for (int i=0; i<summary.length; i++) {
-			System.out.println("\t Host "+connectors.get(i).getServerAddr()+" downloaded "+((double)summary[i]/(double)totalChunks)*100+"% ("+summary[i]+" chunks)" );
+			double percentage = Math.floor(((double)summary[i]/(double)totalChunks)*100);
+			System.out.println("\t Host "+connectors.get(i).getServerAddr()+" downloaded "+percentage+"% ("+summary[i]+" chunks)" );
 		}
 	}
 

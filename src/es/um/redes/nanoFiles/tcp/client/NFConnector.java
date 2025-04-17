@@ -5,7 +5,6 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
-import java.net.UnknownHostException;
 
 import es.um.redes.nanoFiles.tcp.message.PeerMessage;
 
@@ -19,22 +18,31 @@ public class NFConnector {
 
 
 
-	public NFConnector(InetSocketAddress fserverAddr) throws UnknownHostException, IOException {
+	public NFConnector(InetSocketAddress fserverAddr) throws IOException {
 		serverAddr = fserverAddr;
 
 		// Validar el host y el puerto
-		if (serverAddr.getHostString() == null || serverAddr.getHostString().isEmpty()) {
-			throw new IllegalArgumentException("Invalid host: " + serverAddr);
-		}
+		// Validar el puerto
 		if (serverAddr.getPort() <= 0) {
 			throw new IllegalArgumentException("Invalid port: " + serverAddr.getPort());
+
 		}
 		/*
 		 * (Boletín SocketsTCP) Se crea el socket a partir de la dirección del
 		 * servidor (IP, puerto). La creación exitosa del socket significa que la
 		 * conexión TCP ha sido establecida.
 		 */
-		socket = new Socket(serverAddr.getHostString(), serverAddr.getPort());
+		// Obtener el host
+		String host = serverAddr.getAddress() != null
+		? serverAddr.getAddress().getHostAddress() // Dirección IP sin prefijo "/"
+		: serverAddr.getHostString(); // Nombre del host como respaldo
+
+		// Eliminar el prefijo "/" si está presente
+		if (host != null && host.startsWith("/")) {
+			host = host.substring(1);
+		}
+
+		socket = new Socket(host,serverAddr.getPort());
 
 
 		/*

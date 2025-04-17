@@ -28,10 +28,11 @@ public class NanoFiles {
 	/**
 	 *  Tamaño default del chunk que se descarga
 	 */
-	public static int DEFAULT_CHUNK_SIZE = 4096;
+	public static int DEFAULT_CHUNK_SIZE = 8000;
 
 	public static void main(String[] args) {
 		System.setProperty("java.net.useSystemProxies", "false");
+
 		// Comprobamos los argumentos
 		if (args.length > 1) {
 			System.out.println("Usage: java -jar NanoFiles.jar [<local_shared_directory>]");

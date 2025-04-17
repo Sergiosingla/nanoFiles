@@ -225,12 +225,12 @@ public class NFServer implements Runnable {
 				recivedMessage = PeerMessage.readMessageFromInputStream(dis);
 			} catch (IOException e) {
 				// En caso de error al enviar, se enviar OPCODE_ERROR
-				System.err.println("[-] Error reading message from input stream on [serveFilesToClient]");
+				//System.err.println("[-] Error reading message from input stream on [serveFilesToClient]");
 				sendMessage = new PeerMessage(PeerMessageOps.OPCODE_ERROR);
 				try {
 					sendMessage.writeMessageToOutputStream(dos);
 				} catch (IOException e1) {
-					System.err.println("[-] Error writing message to output stream on [serveFilesToClient]");
+					//System.err.println("[-] Error writing message to output stream on [serveFilesToClient]");
 				}
 				return;
 			}
@@ -292,12 +292,12 @@ public class NFServer implements Runnable {
 					sendMessage.writeMessageToOutputStream(dos);
 				}
 			} catch (IOException e) {	// Si hay fallo al enviar se prueba a enviar OPCODE_ERROR
-				System.err.println("[-] Error writing message to output stream on [serveFilesToClient]");
+				//System.err.println("[-] Error writing message to output stream on [serveFilesToClient]");
 				sendMessage = new PeerMessage(PeerMessageOps.OPCODE_ERROR);
 				try {
 					sendMessage.writeMessageToOutputStream(dos);
 				} catch (IOException e1) {
-					System.err.println("[-] Error writing message to output stream on [serveFilesToClient]");
+					//System.err.println("[-] Error writing message to output stream on [serveFilesToClient]");
 				}
 				finished = true;
 			}
@@ -324,7 +324,7 @@ public class NFServer implements Runnable {
 
 			
 		} catch (IOException e) {
-			System.err.println("[-] Error reading chunk from file: " + e.getMessage());
+			//System.err.println("[-] Error reading chunk from file: " + e.getMessage());
 			data = null;
 			
 		} finally {
@@ -332,7 +332,7 @@ public class NFServer implements Runnable {
 				try {
 					raf.close();
 				} catch (IOException e) {
-					System.err.println("[-] Error closing file: " + e.getMessage());
+					//System.err.println("[-] Error closing file: " + e.getMessage());
 				}
 			}
 		}
