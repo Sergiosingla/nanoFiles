@@ -6,6 +6,7 @@ import java.io.RandomAccessFile;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.SocketException;
 
 import es.um.redes.nanoFiles.application.NanoFiles;
 import es.um.redes.nanoFiles.tcp.message.PeerMessage;
@@ -120,6 +121,7 @@ public class NFServer implements Runnable {
 			System.out
 					.println("[fileServerTestMode] NFServer running on " + serverSocket.getLocalSocketAddress() + ".");
 		}
+
 		
 		while(!stopServer) {
 			try {
@@ -131,6 +133,8 @@ public class NFServer implements Runnable {
 				serverThread.start();
 				
 
+			} catch (SocketException e) {
+				System.err.println("[*] Closing the socket...");
 			} catch (IOException e) {
 				System.err.println("[-] Error accepting connection from client");
 			}
@@ -219,7 +223,7 @@ public class NFServer implements Runnable {
 		PeerMessage sendMessage = null;
 		boolean finished = false;
 		String fileToSend = null;
-		while(!socket.isClosed() || !finished) {
+		while(!socket.isClosed() && !finished) {
 			try {
 				// Lecutra del mensaje del cliente 
 				recivedMessage = PeerMessage.readMessageFromInputStream(dis);

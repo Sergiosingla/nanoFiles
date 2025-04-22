@@ -7,6 +7,7 @@ import java.net.InetSocketAddress;
 import java.net.SocketException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -31,7 +32,7 @@ public class NFDirectoryServer {
 	 */
 	private DatagramSocket socket = null;
 	/*
-	 * TODO: Añadir aquí como atributos las estructuras de datos que sean necesarias
+	 * Añadir aquí como atributos las estructuras de datos que sean necesarias
 	 * para mantener en el directorio cualquier información necesaria para la
 	 * funcionalidad del sistema nanoFilesP2P: ficheros publicados, servidores
 	 * registrados, etc.
@@ -45,6 +46,10 @@ public class NFDirectoryServer {
 	 * Map que asocia el hash de un fichero con la lista de servidores que lo tienen
 	 */
 	HashMap<String, Set<InetSocketAddress>> serversByFile = new HashMap<String, Set<InetSocketAddress>>();
+	/**
+	 * Map que asocia cada host con sus ficheros
+	 */
+	HashMap<InetSocketAddress, Set<FileInfo>> filesByServer = new HashMap<>();
 
 	/**
 	 * Lista de servidores registrados en el directorio
@@ -60,6 +65,29 @@ public class NFDirectoryServer {
 		}
 	}
 
+	private void addFilesServer(InetSocketAddress server, FileInfo[] files){
+		// Si el servidor ya tiene ficheros subidos se actualizan
+		if (filesByServer.containsKey(server)){
+			filesByServer.get(server).addAll(Arrays.asList(files));
+		} else{	// Si el servidor no tenia ficheros publicados se crea la entrada en el HashMap
+			Set<FileInfo> fileSet = new HashSet<>(Arrays.asList(files));
+			filesByServer.put(server, fileSet);
+		}
+	}
+
+	private void updateFilesDirectory(){
+		ArrayList<FileInfo> newFilesDirectory = new ArrayList<>();
+
+		for (Set<FileInfo> fileSet : filesByServer.values()) {
+			// Agregar todos los FileInfo del conjunto a la lista
+			newFilesDirectory.addAll(fileSet);
+		}
+
+		// Se actualiza filesDirectory
+		filesDirectory = newFilesDirectory.toArray(new FileInfo[0]);
+	}
+
+	
 
 
 
@@ -329,22 +357,24 @@ public class NFDirectoryServer {
 
 		// Proccess publish_files
 		case DirMessageOps.OPERATION_PUBLISH_FILES: {
-			try {
-				
-				FileInfo[] newFiles = recivedMessage.getFilesInfo();
-				List<FileInfo> fileList = new ArrayList<>(Arrays.asList(filesDirectory));
+			try {	
 
+				InetSocketAddress servAddress = new InetSocketAddress(pkt.getAddress(), NFServer.PORT);
+
+				// Se añade el servidor a la lista de servidores registrados
+				serversList.add(servAddress);
 				
-				// Añadir los nuevos archivos a la lista existente
-				fileList.addAll(Arrays.asList(newFiles));
-				
-				
-				// Actualizar filesDirectory
-				filesDirectory = fileList.toArray(new FileInfo[0]);
-				
+				// Ficheros que se desean publicar
+				FileInfo[] newFiles = recivedMessage.getFilesInfo();
 
 				// Actualizar el map de servidores por fichero
 				addServersFile(new InetSocketAddress(pkt.getAddress(), NFServer.PORT), newFiles);
+
+				// Actualizar el map de ficheros por servidor
+				addFilesServer(servAddress,newFiles);
+
+				// Actualizar el filesDirectory
+				updateFilesDirectory();
 
 				msgToSend = new DirMessage(DirMessageOps.OPERATION_PUBLISH_FILES_OK);
 				System.out.println("[+] SUCCESS on "+DirMessageOps.OPERATION_PUBLISH_FILES);
@@ -364,15 +394,15 @@ public class NFDirectoryServer {
 			try {
 				// Obtener la dirección del servidor que envió el paquete
 				InetSocketAddress serverAddress = new InetSocketAddress(pkt.getAddress(), NFServer.PORT);
+
+				// Eliminamos al host de la lista de servidores
+				serversList.remove(serverAddress);
 		
-				// Lista para almacenar los archivos que serán desregistrados
-				List<FileInfo> filesToUnregister = new ArrayList<>();
-		
+				// Actualizacion de serversByFile
 				// Usar un iterador para recorrer el mapa y eliminar entradas de manera segura
 				Iterator<Map.Entry<String, Set<InetSocketAddress>>> iterator = serversByFile.entrySet().iterator();
 				while (iterator.hasNext()) {
 					Map.Entry<String, Set<InetSocketAddress>> entry = iterator.next();
-					String fileHash = entry.getKey();
 					Set<InetSocketAddress> serverSet = entry.getValue();
 
 					if (serverSet.contains(serverAddress)) {
@@ -383,20 +413,15 @@ public class NFDirectoryServer {
 						if (serverSet.isEmpty()) {
 							iterator.remove();
 						}
-
-						// Agregar el archivo a la lista de desregistrados
-						filesToUnregister.add(Arrays.stream(filesDirectory)
-								.filter(file -> file.getFileHash().equals(fileHash))
-								.findFirst()
-								.orElse(null));
 					}
 				}
 
+				// Actualizacoin de filesByServer
+				filesByServer.remove(serverAddress);
+
 		
 				// Actualizar filesDirectory eliminando los archivos desregistrados
-				List<FileInfo> fileList = new ArrayList<>(Arrays.asList(filesDirectory));
-				fileList.removeIf(file -> filesToUnregister.contains(file));
-				filesDirectory = fileList.toArray(new FileInfo[0]);
+				updateFilesDirectory();
 		
 				// Enviar respuesta de éxito
 				msgToSend = new DirMessage(DirMessageOps.OPERATION_UNREGISTER_SERVER_OK);

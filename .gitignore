@@ -1,6 +1,7 @@
 /.classpath
 /.metadata
 /.project
+.vscode/
 /src/es/um/redes/nanoFiles/tcp/message/PeerMessageTest.java
 /nf-shared
 /downloads

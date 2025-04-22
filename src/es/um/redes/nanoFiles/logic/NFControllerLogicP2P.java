@@ -398,11 +398,7 @@ public class NFControllerLogicP2P {
 	}
 
 	protected boolean serving() {
-		boolean result = false;
-
-		result = (fileServer==null) ? false : true;
-
-		return result;
+		return (fileServer==null) ? false : true;
 	}
 
 	protected boolean uploadFileToServer(FileInfo matchingFile, String uploadToServer) {
