@@ -334,8 +334,13 @@ public class NFControllerLogicP2P {
 
 
 			}
+			// Una vez finalizada la descarga avisamos al servidor que ya hemos terminado
+			for(NFConnector connector : nfConnectors){
+				PeerMessage msgGetChunk = PeerMessage.PeerMessageGetChunck(0,0);
+				connector.sendAndRecive(msgGetChunk);	// Solo nos interesa decirle a cada server que hemos terminado
+			}
+			
 			// Comprobacion del nuevo hash para que coincida
-
 			// Si el hash es diferente ha habido alguna mutacion
 			if (!FileDigest.computeFileChecksumString(localFile.getAbsolutePath()).equals(expectedFileHash)){
 				System.err.println("[-] Error: File integrity check failed. The downloaded file is corrupt. The computed hash does not match the expected hash.");

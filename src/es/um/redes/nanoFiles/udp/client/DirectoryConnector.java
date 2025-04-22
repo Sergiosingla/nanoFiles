@@ -292,7 +292,7 @@ public class DirectoryConnector {
 
 		boolean success = false;
 
-		DirMessage registerFileServerMessage = DirMessage.DirMessagePublishFiles(DirMessageOps.OPERATION_PUBLISH_FILES,files);
+		DirMessage registerFileServerMessage = DirMessage.DirMessagePublishFiles(DirMessageOps.OPERATION_PUBLISH_FILES,files,serverPort);
 		
 		//TODO - depurado para ver ficheros que se envianç
 		System.out.println("\t[*] Registering file server...");
@@ -445,10 +445,10 @@ public class DirectoryConnector {
 	 * @return Verdadero si el directorio tiene registrado a este peer como servidor
 	 *         y ha dado de baja sus ficheros.
 	 */
-	public boolean unregisterFileServer() {
+	public boolean unregisterFileServer(int _port) {
 		boolean success = false;
 
-		DirMessage msgUnregister = new DirMessage(DirMessageOps.OPERATION_UNREGISTER_SERVER);
+		DirMessage msgUnregister = DirMessage.DirMessageUnregisterServer(_port);
 		byte[] requestData = msgUnregister.toString().getBytes();
 
 		// Enviar request_server_list

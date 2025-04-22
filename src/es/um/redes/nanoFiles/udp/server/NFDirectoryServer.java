@@ -324,24 +324,6 @@ public class NFDirectoryServer {
 		// Proccess request_file_list
 		case DirMessageOps.OPERATION_REQEST_FILELIST: {
 
-			/*
-			if (!success) {
-				msgToSend = new DirMessage(DirMessageOps.OPERATION_REQESTTFILELIST_FAIL);
-				System.err.println("[-] Error by "+DirMessageOps.OPERATION_REQESTTFILELIST+". Not already login.");
-				System.err.println("[-] Sending response... "+DirMessageOps.OPERATION_REQESTTFILELIST_FAIL);
-			}
-			// Una vez logeado se envia la informacion de los ficheros publicados
-			else {
-				msgToSend = new DirMessage(DirMessageOps.OPERATION_REQESTTFILELIST_OK, filesDirectory);
-				System.out.println("[+] SUCCESS on "+DirMessageOps.OPERATION_REQESTTFILELIST);
-				System.out.println("[+] Sending files info...");
-			}
-			 */
-
-			
-
-
-
 			try {
 				msgToSend = DirMessage.DirMessageRequestFileListOk(DirMessageOps.OPERATION_REQEST_FILELIST_OK, filesDirectory);
 				System.out.println("[+] SUCCESS on "+DirMessageOps.OPERATION_REQEST_FILELIST);
@@ -359,7 +341,7 @@ public class NFDirectoryServer {
 		case DirMessageOps.OPERATION_PUBLISH_FILES: {
 			try {	
 
-				InetSocketAddress servAddress = new InetSocketAddress(pkt.getAddress(), NFServer.PORT);
+				InetSocketAddress servAddress = new InetSocketAddress(pkt.getAddress(), recivedMessage.getPort());
 
 				// Se añade el servidor a la lista de servidores registrados
 				serversList.add(servAddress);
@@ -368,7 +350,7 @@ public class NFDirectoryServer {
 				FileInfo[] newFiles = recivedMessage.getFilesInfo();
 
 				// Actualizar el map de servidores por fichero
-				addServersFile(new InetSocketAddress(pkt.getAddress(), NFServer.PORT), newFiles);
+				addServersFile(new InetSocketAddress(pkt.getAddress(), recivedMessage.getPort()), newFiles);
 
 				// Actualizar el map de ficheros por servidor
 				addFilesServer(servAddress,newFiles);
@@ -393,7 +375,7 @@ public class NFDirectoryServer {
 		case DirMessageOps.OPERATION_UNREGISTER_SERVER: {
 			try {
 				// Obtener la dirección del servidor que envió el paquete
-				InetSocketAddress serverAddress = new InetSocketAddress(pkt.getAddress(), NFServer.PORT);
+				InetSocketAddress serverAddress = new InetSocketAddress(pkt.getAddress(), recivedMessage.getPort());
 
 				// Eliminamos al host de la lista de servidores
 				serversList.remove(serverAddress);

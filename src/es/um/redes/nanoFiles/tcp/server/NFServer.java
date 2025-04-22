@@ -30,7 +30,8 @@ public class NFServer implements Runnable {
 		 * (Boletín SocketsTCP) Crear una direción de socket a partir del puerto
 		 * especificado (PORT)
 		 */
-		InetSocketAddress socketAddress = new InetSocketAddress(PORT);
+		// Mejora implementada, ahora se ejecuta en un puerto cualquiera, eleguido por el sistema
+		InetSocketAddress socketAddress = new InetSocketAddress(0);
 
 
 		/*
@@ -119,7 +120,7 @@ public class NFServer implements Runnable {
 			return;
 		} else {
 			System.out
-					.println("[fileServerTestMode] NFServer running on " + serverSocket.getLocalSocketAddress() + ".");
+					.println("[*] NFServer running on " + serverSocket.getLocalSocketAddress() + ".");
 		}
 
 		
@@ -134,7 +135,7 @@ public class NFServer implements Runnable {
 				
 
 			} catch (SocketException e) {
-				System.err.println("[*] Closing the socket...");
+				//System.err.println("[*] Closing the socket...");
 			} catch (IOException e) {
 				System.err.println("[-] Error accepting connection from client");
 			}
@@ -164,7 +165,7 @@ public class NFServer implements Runnable {
 
 	}
 	/*
-	 * TODO: (Boletín SocketsTCP) Añadir métodos a esta clase para: 1) Arrancar el
+	 * (Boletín SocketsTCP) Añadir métodos a esta clase para: 1) Arrancar el
 	 * servidor en un hilo nuevo que se ejecutará en segundo plano 2) Detener el
 	 * servidor (stopserver) 3) Obtener el puerto de escucha del servidor etc.
 	 */
@@ -223,7 +224,7 @@ public class NFServer implements Runnable {
 		PeerMessage sendMessage = null;
 		boolean finished = false;
 		String fileToSend = null;
-		while(!socket.isClosed() && !finished) {
+		while(!finished) {
 			try {
 				// Lecutra del mensaje del cliente 
 				recivedMessage = PeerMessage.readMessageFromInputStream(dis);

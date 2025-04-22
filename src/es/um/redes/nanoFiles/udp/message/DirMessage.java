@@ -32,7 +32,7 @@ public class DirMessage {
 	private static final String FIELDNAME_FILES = "files";
 	private static final String FIELDNAME_FILENAMESUBSTRING = "filenamesubstring";
 	private static final String FIELDNAME_SERVERS_LIST = "serverslist";
-
+	private static final String FIELDNAME_SERVER_PORT = "serverport";
 
 
 
@@ -52,6 +52,7 @@ public class DirMessage {
 	private FileInfo[] files = new FileInfo[0];
 	private String filenameSubstring;
 	private InetSocketAddress[] serversList = new InetSocketAddress[0];
+	private int serverPort;
 
 
 
@@ -91,14 +92,22 @@ public class DirMessage {
 	}
 
 	// Constructor para mensajes publish_files
-	public static DirMessage DirMessagePublishFiles(String op, FileInfo[] _files) {
+	public static DirMessage DirMessagePublishFiles(String op, FileInfo[] _files, int _port) {
 		if((!op.equals(DirMessageOps.OPERATION_PUBLISH_FILES))) {
 			throw new RuntimeException(
 					"DirMessage: new request_file_list message / publish_files message called by unexpected opeartion (" + op + ")");
 		}
 		DirMessage msg = new DirMessage(op);
 		msg.setFilesInfo(_files);
+		msg.setPort(_port);
 
+		return msg;
+	}
+
+	// Constructor para mensajes de unregister_server
+	public static DirMessage DirMessageUnregisterServer(int _port){
+		DirMessage msg = new DirMessage(DirMessageOps.OPERATION_UNREGISTER_SERVER);
+		msg.setPort(_port);
 		return msg;
 	}
 
@@ -171,9 +180,15 @@ public class DirMessage {
 		serversList = _serversList;
 	}
 
+	public void setPort(int _port){
+		serverPort = _port;
+	}
 
 
 
+	public int getPort(){
+		return serverPort;
+	}
 
 	public String getProtocolId() {
 		if (!operation.equals(DirMessageOps.OPERATION_PING)) {
@@ -232,8 +247,6 @@ public class DirMessage {
 		// Local variables to save data during parsing
 		DirMessage m = null;
 
-
-
 		for (String line : lines) {
 			int idx = line.indexOf(DELIMITER); // Posición del delimitador
 			String fieldName = line.substring(0, idx).toLowerCase(); // minúsculas
@@ -264,10 +277,14 @@ public class DirMessage {
 					assert (m != null);
 					m.setServersList(strToInetSocketAddress(value));
 					break;
+				}
+				case FIELDNAME_SERVER_PORT: {
+					assert (m != null);
+					int port = Integer.parseInt(value);
+					m.setPort(port);
+					break;
 				}	
 				
-
-
 
 				default:
 					System.err.println("PANIC: DirMessage.fromString - message with unknown field name " + fieldName);
@@ -275,9 +292,6 @@ public class DirMessage {
 					System.exit(-1);
 			}
 		}
-
-
-
 
 		return m;
 	}
@@ -323,11 +337,16 @@ public class DirMessage {
 				break;
 			}
 			case DirMessageOps.OPERATION_PUBLISH_FILES: {
+				sb.append(FIELDNAME_SERVER_PORT + DELIMITER + String.valueOf(getPort())+ END_LINE);
 				sb.append(FIELDNAME_FILES + DELIMITER);
 				for (int i = 0; i < files.length; i++) {
 					sb.append(files[i].toString());
 				}
 				sb.append(END_LINE);
+				break;
+			}
+			case DirMessageOps.OPERATION_UNREGISTER_SERVER: {
+				sb.append(FIELDNAME_SERVER_PORT + DELIMITER + String.valueOf(getPort())+ END_LINE);
 				break;
 			}
 			case DirMessageOps.OPERATION_REQUEST_SERVERS_LIST: {
@@ -348,7 +367,6 @@ public class DirMessage {
 			default:
 				break;
 		}
-
 
 		sb.append(END_LINE); // Marcamos el final del mensaje
 		//System.out.println(sb);
