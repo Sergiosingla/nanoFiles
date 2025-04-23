@@ -426,10 +426,13 @@ public class NFDirectoryServer {
 			// Seleccionar el hash del fichero a buscar
 			String fileNameSubString = recivedMessage.getFileNameSubstring();
 			String hashTarget = null;
+			int contMatches = 0;
 			for (FileInfo file : filesDirectory) {
 				if (file.getFileName().contains(fileNameSubString)) {
 					hashTarget = file.getFileHash();
-					break;
+					if(hashTarget!=null && file.getFileHash()!=hashTarget){
+						contMatches++;
+					}
 				}
 			}
 			// No se encuenta el fichero
@@ -438,7 +441,17 @@ public class NFDirectoryServer {
 				System.err.println("[-] Error by "+DirMessageOps.OPERATION_REQUEST_SERVERS_LIST);
 				System.err.println("[-] No file found with the substring: "+fileNameSubString);
 				System.err.println("[-] Sending response... "+DirMessageOps.OPERATION_REQUEST_SERVERS_LIST_FAIL);
-			} else {
+			} else if(contMatches>1){
+				try {
+					msgToSend = new DirMessage(DirMessageOps.OPERATION_REQUEST_SERVERS_LIST_AMBIGUOUS);
+					System.err.println("[-] Error by "+DirMessageOps.OPERATION_REQUEST_SERVERS_LIST);
+					System.err.println("[-] Ambiguous filename substring. Sending response: "+DirMessageOps.OPERATION_REQUEST_SERVERS_LIST_AMBIGUOUS);
+				} catch (Exception e) {
+					msgToSend = new DirMessage(DirMessageOps.OPERATION_REQUEST_SERVERS_LIST_FAIL);
+					System.err.println("[-] Error by "+DirMessageOps.OPERATION_REQUEST_SERVERS_LIST);
+					System.err.println("[-] Sending response... "+DirMessageOps.OPERATION_REQUEST_SERVERS_LIST_FAIL);				
+				}
+			}else {
 				try {
 					Set<InetSocketAddress> serversSet = serversByFile.get(hashTarget);
 					InetSocketAddress[] servers = serversSet.toArray(new InetSocketAddress[0]);

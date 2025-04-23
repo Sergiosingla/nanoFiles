@@ -427,6 +427,10 @@ public class DirectoryConnector {
 				serversList = responseMessage.getServersList();
 				break;
 			}
+			case DirMessageOps.OPERATION_REQUEST_SERVERS_LIST_AMBIGUOUS: {
+				System.err.println("[-] Error: Ambiguous filename substring in the directory. ("+DirMessageOps.OPERATION_REQUEST_SERVERS_LIST_AMBIGUOUS+")");
+				return null;
+			}
 			case DirMessageOps.OPERATION_REQUEST_SERVERS_LIST_FAIL: {
 				System.err.println("[-] Error in getServersSharingThisFile. Response ("+DirMessageOps.OPERATION_REQUEST_SERVERS_LIST_FAIL+")");
 				break;

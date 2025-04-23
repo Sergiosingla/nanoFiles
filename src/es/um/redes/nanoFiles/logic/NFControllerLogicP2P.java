@@ -144,6 +144,11 @@ public class NFControllerLogicP2P {
 		
 		boolean downloaded = false;
 
+		if(serverAddressList==null){	// Ambigous filenameSubstring case
+			System.err.println("* Cannot start download - No list of server addresses provided");
+			return false;
+		}
+
 		if (serverAddressList.length == 0) {
 			System.err.println("[-] No file currently being served matches the specified file name \""+targetFileNameSubstring+"\".");
 			System.err.println("* Cannot start download - No list of server addresses provided");
@@ -336,7 +341,7 @@ public class NFControllerLogicP2P {
 			}
 			// Una vez finalizada la descarga avisamos al servidor que ya hemos terminado
 			for(NFConnector connector : nfConnectors){
-				PeerMessage msgGetChunk = PeerMessage.PeerMessageGetChunck(0,0);
+				PeerMessage msgGetChunk = PeerMessage.PeerMessageGetChunck(0,0);	// Mensaje que indica el final
 				connector.sendAndRecive(msgGetChunk);	// Solo nos interesa decirle a cada server que hemos terminado
 			}
 			
