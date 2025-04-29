@@ -381,7 +381,7 @@ public class NFControllerLogicP2P {
 					}
 				});
 				downloadThreads[i].start();
-				System.out.println("START THREAD: "+i);
+				//System.out.println("START THREAD: "+i);	// ! DEPURADO
 			}
 
 			// Punto de reunion de los hilos
