@@ -324,6 +324,11 @@ public class NFControllerLogicP2P {
 				downloadThreads[i] = new Thread (() -> {
 					try {
 						for(int chunkIndex=hostIndex;chunkIndex<totalChunks; chunkIndex += numHosts) {
+							// Comprobar que no ha habido ningun error durante la descarga en otro hilo
+							if(downloadFail){
+								throw new DownloadException();
+							}
+
 							// Comprobar que el chunk no ha sido descargado ya
 							synchronized (lock) {
 								if(chunksDownloaded[chunkIndex]){

@@ -260,7 +260,7 @@ public class NFController {
 
 	private void updateCurrentState(boolean success) {
 		/*
-		 * TODO: (Boletín Autómatas) Si el comando ha sido procesado con éxito, debemos
+		 * (Boletín Autómatas) Si el comando ha sido procesado con éxito, debemos
 		 * actualizar currentState de acuerdo con el autómata diseñado para pasar al
 		 * siguiente estado y así permitir unos u otros comandos en cada caso.
 		 */
