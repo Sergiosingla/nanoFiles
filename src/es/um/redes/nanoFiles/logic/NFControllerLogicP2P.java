@@ -18,6 +18,14 @@ import es.um.redes.nanoFiles.tcp.server.NFServer;
 import es.um.redes.nanoFiles.util.FileDigest;
 import es.um.redes.nanoFiles.util.FileInfo;
 
+/*
+ * Clase auxiliar para poder controlar la descarga concurrente
+ * 
+ * Cuando uno de los hilos durante la descarga tiene algun problema este lanza una DownloadException para poder aborar la descarga y comunicarlo
+ * al resto de hilos
+ */
+class DownloadException extends Exception {}
+
 public class NFControllerLogicP2P {
 	/*
 	 * Se necesita un atributo NFServer que actuará como servidor de ficheros
@@ -130,6 +138,8 @@ public class NFControllerLogicP2P {
 		}
 	}
 
+	
+
 	/**
 	 * Método para descargar un fichero del peer servidor de ficheros
 	 * 
@@ -139,6 +149,9 @@ public class NFControllerLogicP2P {
 	 * @param localFileName           Nombre con el que se guardará el fichero
 	 *                                descargado
 	 */
+	private final Object lock = new Object();		// Objecto para la sincronizacion de los hilos concurrentess
+	private volatile boolean downloadFail = false;	// Variable para controlar los errores durante la descarga
+
 	protected boolean downloadFileFromServers(InetSocketAddress[] serverAddressList, String targetFileNameSubstring,
 			String localFileName) {
 		
@@ -155,7 +168,7 @@ public class NFControllerLogicP2P {
 			return false;
 		}
 		/*
-		 * TODO: Crear un objeto NFConnector distinto para establecer una conexión TCP
+		 * Crear un objeto NFConnector distinto para establecer una conexión TCP
 		 * con cada servidor de ficheros proporcionado, y usar dicho objeto para
 		 * descargar trozos (chunks) del fichero. Se debe comprobar previamente si ya
 		 * existe un fichero con el mismo nombre (localFileName) en esta máquina, en
@@ -169,6 +182,8 @@ public class NFControllerLogicP2P {
 		 * método. Si se produce una excepción de entrada/salida (error del que no es
 		 * posible recuperarse), se debe informar sin abortar el programa
 		 */
+
+		// Lista de NFConnector para la descarga
 		ArrayList<NFConnector> nfConnectors = new ArrayList<>();
 		for (InetSocketAddress serverAddress : serverAddressList) {
 			try {
@@ -218,13 +233,6 @@ public class NFControllerLogicP2P {
 			}
 		}
 
-		/*
-		   OPCODE_ERROR:	CORRUPT_DOWNLOAD / GET_CHUNK
-			fallo al enviar algo
-			al recibir CORRUPT_DOWNLOAD
-			fallo al leer los bytes del fichero
-		 */
-		
 		// Solicitud de descarga del fichero targetFileNameSubstring
 		PeerMessage msgDownloadFile = PeerMessage.PeerMessageDownloadFile(targetFileNameSubstring);
 		PeerMessage msgRecivedFromPeer;
@@ -233,6 +241,7 @@ public class NFControllerLogicP2P {
 		String expectedFileHash = null;
 		double expectedFileSize = -1;
 
+		// Depuracion de la lista de host que sirven el fichero, se eliminar aquellos que no estan disponibles
 		Iterator<NFConnector> it = nfConnectors.iterator();
 		while(it.hasNext()){
 			NFConnector connector = it.next();
@@ -291,12 +300,16 @@ public class NFControllerLogicP2P {
 
 		System.out.println("[*] Stating download from "+nfConnectors.size()+ " hosts....");
 
-		// Logica para descargar y esciribr en localFile
-		int numHosts = nfConnectors.size();
-		int defChunkSize = NanoFiles.DEFAULT_CHUNK_SIZE;
-		int numChunks = (int) (expectedFileSize/defChunkSize);
-		int lastChunkSize = (int) (expectedFileSize%defChunkSize);
+		/* LOGICA DE DESCARGA */
 
+		int numHosts = nfConnectors.size();
+		int defChunkSize = NanoFiles.DEFAULT_CHUNK_SIZE;			// Tamaño default de un chunk
+		int numChunks = (int) (expectedFileSize/defChunkSize);		// Numero de chunks a falta de comprobar si hace falta uno que no del mismo tamaño (lastChunk)
+		int lastChunkSize = (int) (expectedFileSize%defChunkSize);	// Tamaño del utlimo chunk, en caso de que el ultimo chunk no tenga el mismo tamaño que el resto
+
+		// Array de hilos de descarga (descarga en paralelo)
+		Thread[] downloadThreads = new Thread[numHosts];
+		
 		// Contador de numero de chunks por host
 		int[] hostChunkCount = new int[numHosts];
 
@@ -304,41 +317,83 @@ public class NFControllerLogicP2P {
 
 			int totalChunks = (lastChunkSize>0) ? numChunks+1 : numChunks;
 
-			for (int chunkIndex=0; chunkIndex<totalChunks; chunkIndex++) {
-				int hostIndex = chunkIndex%numHosts;
-				NFConnector downloadConnector = nfConnectors.get(hostIndex);
+			boolean[] chunksDownloaded = new boolean[totalChunks];		// Array para saber si cierto chunks se ha descargado o no
+			
+			for (int i=0; i<numHosts; i++){
+				final int hostIndex = i;
+				downloadThreads[i] = new Thread (() -> {
+					try {
+						for(int chunkIndex=hostIndex;chunkIndex<totalChunks; chunkIndex += numHosts) {
+							// Comprobar que el chunk no ha sido descargado ya
+							synchronized (lock) {
+								if(chunksDownloaded[chunkIndex]){
+									continue;
+								}
+								// Si no se ha descargado lo marcamos para que nadie mas lo pueda descargar
+								chunksDownloaded[chunkIndex] = true;
+							}
+
 				
-				// Calculo del offset y chunkSize actual
-				long fileOffset = chunkIndex * defChunkSize;
-				int localChunkSize = (chunkIndex == numChunks) ? lastChunkSize : defChunkSize;
+							NFConnector downloadConnector = nfConnectors.get(hostIndex);
+							// Calculo del offset y chunkSize actual
+							long fileOffset = chunkIndex * defChunkSize;
+							int localChunkSize = (chunkIndex == numChunks) ? lastChunkSize : defChunkSize;
+							// Solicitud del chunk
+							PeerMessage msgGetChunk = PeerMessage.PeerMessageGetChunck(fileOffset,localChunkSize);
+							PeerMessage msgChunkResponse = downloadConnector.sendAndRecive(msgGetChunk);
 
-				// Solicitud del chunk
-				PeerMessage msgGetChunk = PeerMessage.PeerMessageGetChunck(fileOffset,localChunkSize);
-				PeerMessage msgChunkResponse = downloadConnector.sendAndRecive(msgGetChunk);
+							// Si hay un corte en la conexion, no se recibe mensaje por lo que se debe salir de manera controlada
+							if(msgChunkResponse==null) {
+								System.err.println("[-] Failed to download, the conexion has been closed or the host have not replied. Aborting download.... ");
+								throw new DownloadException();
+							}
 
-				// Si hay un corte en la conexion, no se recibe mensaje por lo que se debe salir de manera controlada
-				if(msgChunkResponse==null) {
-					System.err.println("[-] Failed to download, the conexion has been closed or the host have not replied. Aborting download.... ");
-					localFile.delete();
-            		return false;
-				}
+							if (msgChunkResponse.getOpcode()==PeerMessageOps.OPCODE_SEND_CHUNK){
+								byte[] chunckData = msgChunkResponse.getChunckData();
+								
+								synchronized(raf){
+									// Esciribir en el fichero
+									//System.out.println("OFFSET: "+fileOffset+" - SIZE: "+chunckData.length);  //! DEPURADO
+									raf.seek(fileOffset);
+									raf.write(chunckData);
+								}
+								hostChunkCount[hostIndex]++;
+								
+							} else {
+								System.err.println("[-] Failed to download chunk " + chunkIndex + " from host " + downloadConnector.getServerAddr());
+								throw new DownloadException();
+							}
 
-				if (msgChunkResponse.getOpcode()==PeerMessageOps.OPCODE_SEND_CHUNK){
-					byte[] chunckData = msgChunkResponse.getChunckData();
-					
-					// Esciribir en el fichero
-					raf.seek(fileOffset);
-					raf.write(chunckData);
-
-					hostChunkCount[hostIndex]++;
-				} else {
-					System.err.println("[-] Failed to download chunk " + chunkIndex + " from host " + downloadConnector.getServerAddr());
-					localFile.delete();
-            		return false;
-				}
-
-
+						}
+					}catch(DownloadException e) {
+						// Si alguna hilo falla durante la descarga debe informar a los otros que no sigan
+						downloadFail = true;
+						return;
+					}catch(IOException e) {
+						System.err.println("[-] Error writing to local file: " + e.getMessage());
+						downloadFail = true;
+						return;
+					}
+				});
+				downloadThreads[i].start();
+				System.out.println("START THREAD: "+i);
 			}
+
+			// Punto de reunion de los hilos
+			for (Thread thread : downloadThreads) {
+				try {
+					thread.join();
+				} catch (InterruptedException e) {
+					System.err.println("[-] Thread interrupted: " + e.getMessage());
+				}
+			}
+			// Si ha fallado la descarga borramos el fichero que se creo y devolvemos false
+			if(downloadFail){
+				System.err.println("[-] Download canceled due to errors in one or more threads.");
+				localFile.delete();
+				return false;
+			}
+
 			// Una vez finalizada la descarga avisamos al servidor que ya hemos terminado
 			for(NFConnector connector : nfConnectors){
 				PeerMessage msgGetChunk = PeerMessage.PeerMessageGetChunck(0,0);	// Mensaje que indica el final
