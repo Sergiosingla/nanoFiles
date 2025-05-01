@@ -21,6 +21,7 @@ public class FileDatabase {
 		this.files = FileInfo.loadFileMapFromFolder(new File(sharedFolder));
 		if (files.size() == 0) {
 			System.err.println("*WARNING: No files found in folder " + sharedFolder);
+			files = null;
 		}
 	}
 

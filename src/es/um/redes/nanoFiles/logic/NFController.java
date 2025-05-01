@@ -141,8 +141,15 @@ public class NFController {
 			} else {
 				boolean serverRunning = controllerPeer.startFileServer();
 				if (serverRunning) {
-					commandSucceeded = controllerDir.registerFileServer(controllerPeer.getServerPort(),
+					try{
+						commandSucceeded = controllerDir.registerFileServer(controllerPeer.getServerPort(),
 							NanoFiles.db.getFiles());
+					}catch(NullPointerException e) {
+						System.err.println("[-] Error during publishing files. Check your nf-shared folder.");
+					}
+					if(!commandSucceeded) {		// Si no hay ficheros en nf-shared si lanza un NullPointerException al hacer serve
+						controllerPeer.stopFileServer();
+					}
 				} else {
 					System.err.println("Cannot start file server");
 				}
