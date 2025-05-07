@@ -426,8 +426,12 @@ public class NFDirectoryServer {
 			int contMatches = 0;
 			for (FileInfo file : filesDirectory) {
 				if (file.getFileName().contains(fileNameSubString)) {
-					hashTarget = file.getFileHash();
-					if(hashTarget!=null && file.getFileHash()!=hashTarget){
+					String actualHash = file.getFileHash();
+					if(hashTarget==null) {
+						hashTarget = actualHash;
+						contMatches++;
+					}
+					if(hashTarget!=null && actualHash!=hashTarget){
 						contMatches++;
 					}
 				}
